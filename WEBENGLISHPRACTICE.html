@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Practica de inglés con AI</title>
+    <style>
+        /* Estilos básicos para el interfaz */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        .container {
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        input[type="text"], button {
+            width: calc(100% - 16px);
+            margin-bottom: 15px;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .result {
+            font-size: 18px;
+            color: #333;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Practica de inglés con AI</h1>
+    <input type="text" id="userInput" placeholder="Haz clic para hablar..." />
+    <div id="messageContainer"></div>
+    <button onclick="startCallSession()">Start Call</button>
+    <button onclick="endCallSession()">End Call</button>
+    <button onclick="toggleMute()">Toggle Mute</button>
+    <input type="text" id="topicInput" placeholder="Introduce un tema para la lección AI (opcional)" />
+    <button onclick="triggerAiLesson()">Start Lesson</button>
+    <div id="flashcardList"></div>
+</div>
+
+<script>
+    const dict = {
+        "hello": "hola",
+        "world": "mundo",
+        // Agrega más palabras aquí
+    };
+
+    let speechRecognition, transcription, aiResponses;
+
+    function startCallSession() {
+        stopCallSession();
+        speechRecognition = new SpeechRecognition();
+        transcription = [];
+        aiResponses = {};
+        speechRecognition.continuous = true;
+        speechRecognition.interimResults = true;
+        speechRecognition.lang = 'en-US';
+        
+        speechRecognition.onstart = () => {
+            document.getElementById('userInput').value = 'Listening...';
+            document.getElementById('userInput').disabled = true;
+        };
+
+        speechRecognition.onresult = (event) => {
+            transcription.push(event.results[0][0].transcript);
+            const fullTranscription = transcription.join('');
+            appendMessage("User", fullTranscription);
+            sendToOllamaLocal(fullTranscription);
+        };
+
+        speechRecognition.onerror = (error) => {
+            console.error('Error: ', error.name);
+        };
+        
+        speechRecognition.onend = () => {
+            document.getElementById('userInput').value = 'Ready';
+            document.getElementById('userInput').disabled = false;
+        };
+
+        speechRecognition.start();
+    }
+
+    function endCallSession() {
+        if (speechRecognition) {
+            speechRecognition.stop();
+        }
+    }
+
+    function toggleMute() {
+        // Implementar el mute en el audio
+    }
+
+    function triggerAiLesson(topic) {
+        const topicInput = document.getElementById('topicInput').value;
+        aiResponses[topic] = [];
+        sendToOllamaLocal(`Start lesson on ${topic}`);
+    }
+
+    async function sendToOllamaLocal(userText) {
+        const response = await fetch(`http://localhost:11434/api/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: userText
+            })
+        });
+
+        const data = await response.json();
+        aiResponses[data.topic].push(data.response);
+        appendMessage("AI", data.response);
+    }
+
+    function appendMessage(sender, text) {
+        const div = document.createElement('div');
+        if (sender === "User") {
+            div.classList.add('userBubble');
+            div.textContent = `You: ${text}`;
+        } else {
+            div.classList.add('aiBubble');
+            div.textContent = `AI: ${data.response} (${data.score})`;
+        }
+        document.getElementById('messageContainer').appendChild(div);
+        scrollChat();
+
+        // Check for corrections and suggestions
+        checkForCorrections(text, data.response);
+    }
+
+    function injectCorrectionToLastUserBubble(corr) {
+        const userBubbles = document.getElementsByClassName('userBubble');
+        if (userBubbles.length > 0) {
+            const lastUserBubble = userBubbles[userBubbles.length - 1];
+            lastUserBubble.textContent += ` Correction: ${corr.correctSentence} (${corr.score})`;
+        }
+    }
+
+    function showPopover(event, word) {
+        event.preventDefault();
+        const popoverContainer = document.getElementById('popover-container');
+        popoverContainer.style.left = `${event.pageX}px`;
+        popoverContainer.style.top = `${event.pageY}px`;
+
+        let content;
+        if (dict[word]) {
+            content = `<p>Traducción: ${dict[word]}</p>`;
+        } else {
+            content = `<button onclick="saveWord('${word}')">Guardar</button>`;
+        }
+
+        popoverContainer.innerHTML = `
+            <div class="popover-content">
+                ${content}
+            </div>
+        `;
+    }
+
+    function saveWord(word) {
+        // Implementar la funcionalidad de guardar palabras
+    }
+
+    function checkForCorrections(userText, aiResponse) {
+        const words = userText.split(/\s+/);
+        for (let i = 0; i < words.length; i++) {
+            if (!aiResponse.includes(words[i])) {
+                // Si el AI no menciona la palabra en la respuesta, busque en el diccionario
+                if (dict[words[i]]) {
+                    aiResponses[userText].push(`"${words[i]}" no fue mencionado por el AI. Traducción: ${dict[words[i]]}`);
+                }
+            }
+        }
+    }
+
+    function scrollChat() {
+        const messageContainer = document.getElementById('messageContainer');
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+
+    // Flashcard functionality
+    let flashcards = [];
+
+    function saveWord(word) {
+        if (!flashcards.includes(word)) {
+            flashcards.push(word);
+            updateFlashcardList();
+        }
+    }
+
+    function updateFlashcardList() {
+        const flashcardList = document.getElementById('flashcardList');
+        flashcardList.innerHTML = '';
+        flashcards.forEach(flashcard => {
+            const li = document.createElement('li');
+            li.textContent = flashcard;
+            flashcardList.appendChild(li);
+        });
+    }
+</script>
+
+<div id="popover-container" class="hidden">
+    <div class="popover-content"></div>
+</div>
+
+</body>
+</html>
