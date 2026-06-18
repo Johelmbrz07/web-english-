@@ -215,6 +215,11 @@
   .field input, .field select { width:100%; padding:11px 12px; background:var(--bg-1); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:14px; outline:none; }
   .field input:focus, .field select:focus { border-color:var(--blue); }
   .save-note { color:var(--green); font-size:13px; margin-top:8px; min-height:18px; }
+  .switch-row { display:flex; gap:12px; align-items:flex-start; cursor:pointer; margin-bottom:8px; }
+  .switch-row input[type="checkbox"] { width:20px; height:20px; flex:0 0 auto; margin-top:2px; accent-color: var(--blue); cursor:pointer; }
+  .switch-row .sr-title { font-weight:700; }
+  .hint { color:var(--text-mute); font-size:12px; line-height:1.4; }
+  input[type="range"] { width:100%; accent-color: var(--blue); height:6px; cursor:pointer; }
 
   /* ============ BOTTOM NAV ============ */
   .nav {
@@ -345,6 +350,21 @@
     </div>
 
     <div class="setting">
+      <h3>Conversation</h3>
+      <p>Control how the tutor reacts while you are speaking.</p>
+      <label class="switch-row" for="manualModeToggle">
+        <input type="checkbox" id="manualModeToggle" onchange="setManualMode(this.checked)" />
+        <span><span class="sr-title">Manual mode</span><br>
+          <span class="hint">Press 'Send' or Enter to send a message. The tutor will not auto-respond. Your speech is typed into the box so you can review it first.</span></span>
+      </label>
+      <div class="field" style="margin-top:16px">
+        <label>Tutor patience: <span id="patienceVal">5</span></label>
+        <input type="range" id="patienceSlider" min="1" max="10" value="5" oninput="setPatience(this.value)" />
+        <div class="hint">1 means the tutor responds very quickly · 10 means it waits longer for you to finish speaking or thinking.</div>
+      </div>
+    </div>
+
+    <div class="setting">
       <h3>Tutor formality</h3>
       <p>The register the AI uses when talking to you.</p>
       <div class="seg-group">
@@ -448,6 +468,8 @@ const DEFAULT_SETTINGS = {
   practiceLang: "en-US",
   nativeLang: "es",
   formality: "normal",
+  patience: 5,
+  manualMode: false,
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "llama3.2:3b",
   voiceName: "",
@@ -512,6 +534,11 @@ let speaking = false;    // TTS speaking
 let waitingAI = false;   // waiting for AI reply
 let micStream = null;    // persistent MediaStream -> avoids re-asking permission
 let restartGuard = { count:0, last:0 };
+let speechBuffer = "";   // accumulates what you say before sending
+let silenceTimer = null; // fires after you stop talking (tutor patience)
+
+// How long (ms) the tutor waits in silence before replying. patience 1..10
+function patienceDelay() { return 900 + (Math.max(1, Math.min(10, settings.patience || 5)) - 1) * 750; }
 
 function micSupported() { return !!SpeechRec; }
 
@@ -530,7 +557,7 @@ function releaseMic() {
 function buildRecognition() {
   const r = new SpeechRec();
   r.continuous = true;       // stay in ONE session -> a single permission grant, no loop
-  r.interimResults = false;
+  r.interimResults = true;   // see speech live + know when you're still talking
   r.lang = settings.practiceLang || "en-US";
   r.maxAlternatives = 1;
 
@@ -550,10 +577,29 @@ function buildRecognition() {
   r.onresult = (event) => {
     // ignore anything captured while the tutor is talking or we're waiting for a reply
     if (!isCalling || isMuted || speaking || waitingAI) return;
-    const res = event.results[event.results.length - 1];
-    if (!res.isFinal) return;
-    const text = res[0].transcript.trim();
-    if (text) { restartGuard.count = 0; handleUserUtterance(text); }
+    let finalText = "", interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const seg = event.results[i];
+      if (seg.isFinal) finalText += seg[0].transcript;
+      else interim += seg[0].transcript;
+    }
+
+    // MANUAL MODE: transcribe into the input box, never auto-send
+    if (settings.manualMode) {
+      if (finalText.trim()) {
+        const cur = document.getElementById("manualInput").value.trim();
+        document.getElementById("manualInput").value = (cur ? cur + " " : "") + finalText.trim();
+      }
+      setMic(true, "🎤 " + (interim || "Type or speak, then press Enter"));
+      return;
+    }
+
+    // AUTO MODE: accumulate and wait `patience` of silence before sending
+    if (finalText.trim()) { restartGuard.count = 0; speechBuffer = (speechBuffer + " " + finalText).trim(); }
+    const shown = (speechBuffer + " " + interim).trim();
+    setMic(true, shown ? "🎤 " + shown : "Listening...");
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(flushSpeech, patienceDelay());
   };
   r.onend = () => {
     listening = false;
@@ -562,6 +608,15 @@ function buildRecognition() {
     if (isCalling && !isMuted) setTimeout(maybeStart, 350);
   };
   return r;
+}
+
+// Sends whatever you've said once you've been silent long enough.
+function flushSpeech() {
+  const text = speechBuffer.trim();
+  speechBuffer = "";
+  if (text && isCalling && !isMuted && !waitingAI && !speaking && !settings.manualMode) {
+    handleUserUtterance(text);
+  }
 }
 
 // Start recognition with an anti-loop throttle.
@@ -587,6 +642,7 @@ async function startCallAsync() {
   }
 
   isCalling = true; isMuted = false; waitingAI = false; restartGuard = { count:0, last:0 };
+  speechBuffer = ""; clearTimeout(silenceTimer);
   stats.sessions++; persist();
   document.getElementById("lessonCard").style.display = "none";
   document.getElementById("chatWrap").style.display = "block";
@@ -605,6 +661,7 @@ async function startCallAsync() {
 
 function endCallSession() {
   isCalling = false; isMuted = false; listening = false; waitingAI = false; speaking = false;
+  speechBuffer = ""; clearTimeout(silenceTimer);
   if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   releaseMic();
@@ -625,7 +682,7 @@ function toggleMute() {
   const btn = document.getElementById("muteBtn");
   if (isMuted) {
     if (recognition) { try { recognition.abort(); } catch (e) {} }
-    listening = false;
+    listening = false; speechBuffer = ""; clearTimeout(silenceTimer);
     btn.textContent = "🎤 Resume mic"; setMic(false, "Microphone paused");
   } else {
     btn.textContent = "🎤 Pause mic"; maybeStart();
@@ -853,6 +910,7 @@ function speak(text, langOverride) {
   if (!window.speechSynthesis) { if (isCalling && !isMuted) setTimeout(maybeStart, 200); return; }
   window.speechSynthesis.cancel();
   if (ttsKeepAlive) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; }
+  speechBuffer = ""; clearTimeout(silenceTimer);
   speaking = true;
   setMic(false, "Tutor speaking…");
 
@@ -1117,6 +1175,9 @@ function renderSettings() {
   document.querySelectorAll(".seg-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.formality === settings.formality));
   document.getElementById("formalityDesc").textContent = FORMALITY_TEXT[settings.formality];
+  const mm = document.getElementById("manualModeToggle"); if (mm) mm.checked = !!settings.manualMode;
+  const ps = document.getElementById("patienceSlider"); if (ps) ps.value = settings.patience;
+  const pv = document.getElementById("patienceVal"); if (pv) pv.textContent = settings.patience;
   document.getElementById("ollamaUrl").value = settings.ollamaUrl;
   populateModelSelect(settings.ollamaModel ? [settings.ollamaModel] : []);
   loadOllamaModels();
@@ -1156,6 +1217,16 @@ async function loadOllamaModels() {
 }
 
 function setFormality(f) { settings.formality = f; persist(); renderSettings(); toast("Formality: " + f); }
+function setManualMode(v) {
+  settings.manualMode = !!v; persist();
+  if (settings.manualMode) { speechBuffer = ""; clearTimeout(silenceTimer); }
+  toast(settings.manualMode ? "Manual mode ON" : "Manual mode OFF");
+}
+function setPatience(v) {
+  settings.patience = parseInt(v, 10) || 5; persist();
+  const lbl = document.getElementById("patienceVal");
+  if (lbl) lbl.textContent = settings.patience;
+}
 
 document.addEventListener("input", (e) => {
   if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
