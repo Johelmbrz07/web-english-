@@ -449,9 +449,10 @@ const DEFAULT_SETTINGS = {
   nativeLang: "es",
   formality: "normal",
   ollamaUrl: "http://localhost:11434",
-  ollamaModel: "llama3",
+  ollamaModel: "llama3.2:3b",
   voiceName: "",
 };
+const PREFERRED_MODEL = "llama3.2:3b";
 let settings  = loadJSON(LS.settings, DEFAULT_SETTINGS);
 let flashcards = loadJSON(LS.flashcards, []);
 let stats = loadJSON(LS.stats, { sessions:0, messages:0 });
@@ -746,9 +747,11 @@ async function sendToAI(userText, isGreeting, userBubble) {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        model: settings.ollamaModel || "llama3",
+        model: settings.ollamaModel || "llama3.2:3b",
         stream: false,
         format: "json",
+        keep_alive: "10m",
+        options: { num_predict: 200, temperature: 0.6 },
         messages: [
           { role:"system", content: systemPrompt(isGreeting) },
           { role:"user", content: userText },
@@ -797,18 +800,47 @@ function safeParse(s) {
    TEXT TO SPEECH
 ========================================================= */
 let voices = [];
+
+// Puntúa las voces para elegir la más natural disponible.
+function voiceScore(v) {
+  const n = (v.name + " " + (v.voiceURI || "")).toLowerCase();
+  let s = 0;
+  if (/natural|neural|premium|enhanced|wavenet|online/.test(n)) s += 50;
+  if (/google/.test(n)) s += 25;
+  if (/microsoft/.test(n)) s += 15;
+  if (v.localService) s += 5;
+  return s;
+}
+function bestVoiceFor(prefix) {
+  const exact = voices.filter(v => v.lang && v.lang.toLowerCase() === (settings.practiceLang || "").toLowerCase());
+  const byLang = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  const pool = exact.length ? exact : (byLang.length ? byLang : voices);
+  return pool.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
+}
+
 function loadVoices() {
   voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
   const sel = document.getElementById("voiceSelect");
   if (!sel) return;
   sel.innerHTML = "";
-  const prefix = (settings.practiceLang || "en").slice(0,2);
+  const prefix = (settings.practiceLang || "en").slice(0, 2);
   let list = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
-  if (!list.length) list = voices;
+  if (!list.length) list = voices.slice();
+  list.sort((a, b) => voiceScore(b) - voiceScore(a)); // mejores primero
+
+  // si no hay voz elegida (o no aplica al idioma actual), autoselecciona la mejor
+  const stillValid = list.some(v => v.name === settings.voiceName);
+  if (!stillValid) {
+    const best = bestVoiceFor(prefix);
+    settings.voiceName = best ? best.name : "";
+    persist();
+  }
   list.forEach(v => {
     const o = document.createElement("option");
     o.value = v.name;
-    o.textContent = v.name.replace(/Microsoft|Google/gi,"").trim() + " (" + v.lang + ")";
+    const nice = v.name.replace(/Microsoft|Google/gi, "").trim();
+    const natural = /natural|neural|premium|enhanced|online/i.test(v.name) ? " ✨" : "";
+    o.textContent = nice + " (" + v.lang + ")" + natural;
     if (v.name === settings.voiceName) o.selected = true;
     sel.appendChild(o);
   });
@@ -823,9 +855,15 @@ function speak(text, langOverride) {
   setMic(false, "Tutor speaking…");
 
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = langOverride || settings.practiceLang || "en-US";
-  const v = voices.find(x => x.name === settings.voiceName);
-  if (v && (!langOverride)) u.voice = v;
+  const lang = langOverride || settings.practiceLang || "en-US";
+  u.lang = lang;
+  // voz: la elegida o la mejor para el idioma
+  let v = voices.find(x => x.name === settings.voiceName && x.lang && x.lang.toLowerCase().startsWith(lang.slice(0,2)));
+  if (!v) v = bestVoiceFor(lang.slice(0, 2));
+  if (v) u.voice = v;
+  u.rate = 0.95;  // un pelín más lento = más claro y menos robótico
+  u.pitch = 1.0;
+  u.volume = 1.0;
   u.onstart = () => { speaking = true; };
   const resume = () => {
     speaking = false;
@@ -879,7 +917,8 @@ async function generateFlashcard(word) {
     const res = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ model: settings.ollamaModel || "llama3", stream:false, format:"json",
+      body: JSON.stringify({ model: settings.ollamaModel || "llama3.2:3b", stream:false, format:"json",
+        keep_alive:"10m", options:{ num_predict: 400, temperature: 0.5 },
         messages:[{ role:"user", content:instruction }] }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1099,7 +1138,11 @@ async function loadOllamaModels() {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const names = (data.models || []).map(m => m.name);
-    if (names.length && !names.includes(settings.ollamaModel)) { settings.ollamaModel = names[0]; persist(); }
+    // si el modelo guardado no existe, prefiere el rápido (llama3.2:3b); si no, el primero
+    if (names.length && !names.includes(settings.ollamaModel)) {
+      settings.ollamaModel = names.includes(PREFERRED_MODEL) ? PREFERRED_MODEL : names[0];
+      persist();
+    }
     populateModelSelect(names);
     return names;
   } catch (e) { return null; }
@@ -1144,6 +1187,8 @@ function resetData() {
 ========================================================= */
 function init() {
   settings = Object.assign({}, DEFAULT_SETTINGS, settings);
+  if (settings.ollamaModel === "llama3") settings.ollamaModel = PREFERRED_MODEL; // migra el viejo default
+  persist();
   buildLangSelects();
   loadVoices();
   renderSettings();
