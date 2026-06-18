@@ -1,219 +1,1030 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Practica de inglés con AI</title>
-    <style>
-        /* Estilos básicos para el interfaz */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f4f9;
-        }
-        .container {
-            width: 80%;
-            max-width: 600px;
-            background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-        input[type="text"], button {
-            width: calc(100% - 16px);
-            margin-bottom: 15px;
-            padding: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        .result {
-            font-size: 18px;
-            color: #333;
-            line-height: 1.4;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Práctica de inglés con IA</title>
+<style>
+  /* ============ TEMA OSCURO / TOKENS ============ */
+  :root {
+    --bg-0: #0b0f1a;
+    --bg-1: #111726;
+    --bg-2: #161d2e;
+    --bg-3: #1d2638;
+    --surface: #141b2b;
+    --surface-2: #1a2335;
+    --border: #26314a;
+    --border-soft: #1f2840;
+    --text: #e7ecf5;
+    --text-dim: #9aa6bd;
+    --text-mute: #6b7689;
+    --accent: #ffc861;       /* ámbar (acciones primarias) */
+    --accent-strong: #ffb838;
+    --accent-ink: #2a1d00;
+    --blue: #3b82f6;         /* navegación activa */
+    --blue-soft: #1e3a5f;
+    --green: #34d399;
+    --green-soft: #123a2e;
+    --red: #f87171;
+    --red-soft: #3a1620;
+    --purple: #a78bfa;
+    --purple-soft: #241a3d;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --nav-h: 76px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,77,255,.12), transparent 60%),
+      radial-gradient(900px 500px at 0% 100%, rgba(59,130,246,.10), transparent 55%),
+      linear-gradient(180deg, #0b0f1a 0%, #0a0e18 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 760px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 22px 18px calc(var(--nav-h) + 28px);
+    position: relative;
+  }
+
+  /* ============ HEADER ============ */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  .brand .logo {
+    width:34px; height:34px; border-radius:10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    display:grid; place-items:center; color:var(--accent-ink); font-size:18px;
+  }
+  .voice-pill {
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface-2); border:1px solid var(--border);
+    border-radius: 999px; padding:6px 12px; cursor:pointer; font-size:14px; color:var(--text);
+  }
+  .voice-pill select {
+    background:transparent; border:none; color:var(--text); font-size:14px; cursor:pointer; outline:none;
+  }
+
+  /* ============ VIEWS ============ */
+  .view { display:none; animation: fade .25s ease; }
+  .view.active { display:block; }
+  @keyframes fade { from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:none;} }
+
+  .section-title { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mute); margin:22px 4px 10px; }
+
+  /* ---- Lesson / start card ---- */
+  .lesson-card {
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    border:1px solid var(--border);
+    border-radius: var(--radius);
+    padding:22px;
+    box-shadow: var(--shadow);
+  }
+  .lesson-head { display:flex; gap:16px; align-items:flex-start; }
+  .lesson-num {
+    flex:0 0 auto; width:58px; height:58px; border-radius:14px;
+    background: rgba(255,200,97,.12); color:var(--accent);
+    display:grid; place-items:center; font-weight:800; font-size:18px;
+  }
+  .lesson-title { font-size:22px; font-weight:800; line-height:1.25; margin:2px 0 0; }
+  .lesson-sub { color:var(--text-dim); font-size:14px; margin-top:6px; }
+
+  .topic-input {
+    width:100%; margin-top:18px; padding:13px 14px;
+    background: var(--bg-1); border:1px solid var(--border); border-radius:12px;
+    color:var(--text); font-size:15px; outline:none;
+  }
+  .topic-input:focus { border-color: var(--blue); }
+
+  .btn {
+    border:none; border-radius:14px; padding:15px 18px; font-size:16px; font-weight:700;
+    cursor:pointer; width:100%; transition: transform .08s ease, filter .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-strong)); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-danger { background: var(--red-soft); color: var(--red); border:1px solid #5a2230; }
+  .btn-ghost { background: var(--surface-2); color:var(--text); border:1px solid var(--border); }
+  .btn-row { display:flex; gap:10px; margin-top:14px; }
+  .btn-row .btn { width:auto; flex:1; }
+
+  /* ---- Chat ---- */
+  .chat-wrap { margin-top:18px; }
+  .chat {
+    background: var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; min-height:46vh; max-height:52vh; overflow-y:auto;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .bubble { max-width:82%; padding:11px 14px; border-radius:16px; font-size:15px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
+  .bubble .who { display:block; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-mute); margin-bottom:3px; }
+  .userBubble { align-self:flex-end; background: var(--blue-soft); border:1px solid #2a4f7a; border-bottom-right-radius:5px; }
+  .aiBubble { align-self:flex-start; background: var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:5px; }
+  .aiBubble .word { cursor:pointer; border-bottom:1px dashed transparent; }
+  .aiBubble .word:hover { border-bottom-color: var(--accent); }
+  .correction { margin-top:8px; padding:8px 10px; border-radius:10px; background: var(--green-soft); border-left:3px solid var(--green); font-size:13px; color:#bdf0db; }
+  .chat-empty { color:var(--text-mute); text-align:center; margin:auto; font-size:14px; }
+
+  .mic-status {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:14px; color:var(--text-dim); font-size:14px; min-height:22px;
+  }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--text-mute); }
+  .dot.live { background: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(248,113,113,.5);} 70%{box-shadow:0 0 0 8px rgba(248,113,113,0);} 100%{box-shadow:0 0 0 0 rgba(248,113,113,0);} }
+
+  /* ============ FLASHCARDS ============ */
+  .fc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px; margin-top:6px; }
+  .fc-chip {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px;
+    cursor:pointer; transition:border-color .15s ease, transform .08s ease;
+  }
+  .fc-chip:hover { border-color:var(--accent); }
+  .fc-chip:active { transform:scale(.98); }
+  .fc-chip .w { font-size:18px; font-weight:800; }
+  .fc-chip .t { color:var(--text-dim); font-size:13px; margin-top:4px; }
+  .fc-chip .pos { display:inline-block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-top:8px; }
+  .empty-state { text-align:center; color:var(--text-mute); padding:40px 10px; }
+  .empty-state .big { font-size:42px; margin-bottom:10px; }
+
+  /* ---- Study mode ---- */
+  .study-bar { margin-top:4px; }
+  .progress-track { height:6px; background:var(--bg-3); border-radius:99px; overflow:hidden; }
+  .progress-fill { height:100%; background: linear-gradient(90deg, var(--green), #22c55e); transition:width .3s ease; }
+  .study-meta { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+  .study-meta .count { color:var(--text-dim); font-size:13px; }
+  .study-nav { display:flex; gap:10px; align-items:center; margin:12px 0; }
+  .study-nav button { background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:9px 14px; cursor:pointer; font-size:14px; }
+  .study-nav button:disabled { opacity:.4; cursor:default; }
+  .study-hint { text-align:center; color:var(--text-mute); font-size:13px; margin:6px 0 14px; }
+
+  .flip { perspective:1600px; }
+  .flip-inner { position:relative; transition:transform .55s; transform-style:preserve-3d; min-height:430px; }
+  .flip.flipped .flip-inner { transform: rotateY(180deg); }
+  .face {
+    position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    background: var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; overflow-y:auto; box-shadow: var(--shadow);
+  }
+  .face.back { transform: rotateY(180deg); }
+  .face.front { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; }
+  .front .big-word { font-size:46px; font-weight:800; font-family: Georgia, "Times New Roman", serif; }
+  .front .flip-cta { color:var(--text-mute); font-size:13px; }
+
+  .card-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .card-word { font-size:34px; font-weight:800; font-family: Georgia, "Times New Roman", serif; }
+  .pos-badge { font-size:11px; letter-spacing:.06em; text-transform:uppercase; background:var(--bg-3); color:var(--text-dim); padding:4px 9px; border-radius:99px; }
+  .listen-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  .listen-btn:hover { border-color:var(--blue); }
+  .translation { color:var(--blue); font-size:24px; font-weight:700; margin:14px 0; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  .blk { padding:14px 0; border-bottom:1px solid var(--border); }
+  .blk:last-child { border-bottom:none; }
+  .blk-title { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mute); margin-bottom:10px; }
+  .conj-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+  .conj { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; color:var(--text-dim); }
+  .conj b { color:var(--text); }
+  .mini-speak { flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim); cursor:pointer; }
+  .mini-speak:hover { border-color:var(--blue); color:var(--text); }
+  .example { padding:11px 13px; border-radius:10px; font-size:14px; line-height:1.4; }
+  .example.good { background:var(--green-soft); border-left:3px solid var(--green); color:#c7f2e2; }
+  .example.bad { background:var(--red-soft); border-left:3px solid var(--red); color:#f6cdd4; }
+  .other-mean { font-size:14px; color:var(--text-dim); }
+  .freq { display:flex; align-items:center; gap:6px; }
+  .freq .seg { width:34px; height:8px; border-radius:3px; background:var(--bg-3); }
+  .freq .seg.on { background:var(--green); }
+  .freq .label { margin-left:8px; color:var(--text-dim); font-size:13px; }
+  .tip { background:var(--purple-soft); border:1px solid #3a2d63; border-radius:12px; padding:13px 15px; margin-top:14px; }
+  .tip .tip-h { color:#d7c9ff; font-weight:700; font-size:14px; margin-bottom:5px; }
+  .tip .tip-b { color:#bcaee0; font-size:14px; line-height:1.5; }
+  .card-actions { display:flex; gap:10px; margin-top:16px; }
+  .card-actions button { flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px; cursor:pointer; font-size:14px; }
+  .card-actions .del { color:var(--red); }
+  .loading-card { text-align:center; color:var(--text-dim); padding:40px 10px; }
+  .spinner { width:26px; height:26px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; margin:0 auto 14px; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ============ SETTINGS ============ */
+  .setting { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; }
+  .setting h3 { margin:0 0 6px; font-size:16px; }
+  .setting p { margin:0 0 14px; color:var(--text-dim); font-size:13px; line-height:1.5; }
+  .seg-group { display:flex; gap:8px; background:var(--bg-1); padding:5px; border-radius:12px; border:1px solid var(--border); }
+  .seg-btn { flex:1; text-align:center; padding:11px 8px; border-radius:9px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text-dim); border:none; background:transparent; transition:all .15s ease; }
+  .seg-btn.active { background: linear-gradient(180deg, var(--accent), var(--accent-strong)); color:var(--accent-ink); }
+  .seg-desc { margin-top:10px; font-size:13px; color:var(--text-mute); min-height:18px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px; }
+  .field input, .field select {
+    width:100%; padding:11px 12px; background:var(--bg-1); border:1px solid var(--border);
+    border-radius:10px; color:var(--text); font-size:14px; outline:none;
+  }
+  .field input:focus, .field select:focus { border-color:var(--blue); }
+  .save-note { color:var(--green); font-size:13px; margin-top:8px; min-height:18px; }
+
+  /* ============ BOTTOM NAV ============ */
+  .nav {
+    position:fixed; left:0; right:0; bottom:0; height:var(--nav-h);
+    background: rgba(13,18,30,.92); backdrop-filter: blur(14px);
+    border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-around;
+    padding:0 max(10px, env(safe-area-inset-bottom));
+    z-index:50;
+  }
+  .nav-item { background:none; border:none; color:var(--text-mute); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:6px 10px; transition:color .15s ease; }
+  .nav-item svg { width:24px; height:24px; }
+  .nav-item.active { color:var(--blue); }
+  .nav-call {
+    width:58px; height:58px; border-radius:50%; margin-top:-26px;
+    background: linear-gradient(180deg, #3b82f6, #2563eb); color:#fff;
+    box-shadow: 0 8px 22px rgba(37,99,235,.5);
+    display:grid; place-items:center; border:3px solid var(--bg-0);
+  }
+  .nav-call.in-call { background: linear-gradient(180deg, #f87171, #ef4444); box-shadow:0 8px 22px rgba(239,68,68,.5); }
+  .nav-call svg { width:26px; height:26px; }
+
+  /* ============ POPOVER ============ */
+  #popover { position:fixed; z-index:100; display:none; }
+  #popover.show { display:block; }
+  .popover-content {
+    background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
+    padding:10px; box-shadow:var(--shadow); min-width:160px; transform:translate(-50%, 8px);
+  }
+  .popover-content .pw { font-weight:700; margin-bottom:4px; }
+  .popover-content .pt { color:var(--text-dim); font-size:13px; margin-bottom:8px; }
+  .popover-content button { width:100%; background:var(--accent); color:var(--accent-ink); border:none; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; }
+
+  /* ============ TOAST ============ */
+  #toast {
+    position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px;
+    opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
+<div class="app">
 
-<div class="container">
-    <h1>Practica de inglés con AI</h1>
-    <input type="text" id="userInput" placeholder="Haz clic para hablar..." />
-    <div id="messageContainer"></div>
-    <button onclick="startCallSession()">Start Call</button>
-    <button onclick="endCallSession()">End Call</button>
-    <button onclick="toggleMute()">Toggle Mute</button>
-    <input type="text" id="topicInput" placeholder="Introduce un tema para la lección AI (opcional)" />
-    <button onclick="triggerAiLesson()">Start Lesson</button>
-    <div id="flashcardList"></div>
+  <!-- ===== HEADER ===== -->
+  <div class="topbar">
+    <div class="brand"><span class="logo">🎧</span> English<span style="color:var(--accent)">AI</span></div>
+    <div class="voice-pill">
+      <span id="voiceFlag">🇺🇸</span>
+      <select id="voiceSelect" title="Voz del tutor"></select>
+    </div>
+  </div>
+
+  <!-- ===== VIEW: PRACTICE / CALL ===== -->
+  <section id="view-practice" class="view active">
+    <div class="lesson-card" id="lessonCard">
+      <div class="lesson-head">
+        <div class="lesson-num" id="lessonNum">AI</div>
+        <div>
+          <div class="lesson-title" id="lessonTitle">Conversación libre</div>
+          <div class="lesson-sub">Habla en inglés con tu tutor de IA. Escribe un tema o empieza directo.</div>
+        </div>
+      </div>
+      <input type="text" id="topicInput" class="topic-input" placeholder="Tema de la lección (opcional): travel, job interview, cloud..." />
+      <button class="btn btn-primary" style="margin-top:14px" onclick="startCallSession()">▶ Start call</button>
+    </div>
+
+    <div class="chat-wrap" id="chatWrap" style="display:none">
+      <div class="chat" id="messageContainer">
+        <div class="chat-empty" id="chatEmpty">Di algo o escribe para empezar la conversación 👋</div>
+      </div>
+      <div class="mic-status"><span class="dot" id="micDot"></span><span id="micText">Listo</span></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="muteBtn" onclick="toggleMute()">🎤 Pausar mic</button>
+        <button class="btn btn-danger" onclick="endCallSession()">■ End call</button>
+      </div>
+      <input type="text" id="manualInput" class="topic-input" placeholder="...o escribe tu mensaje aquí y presiona Enter" onkeydown="if(event.key==='Enter'){sendManual();}" />
+    </div>
+  </section>
+
+  <!-- ===== VIEW: FLASHCARDS ===== -->
+  <section id="view-flashcards" class="view">
+    <div class="section-title">Mis flashcards</div>
+    <div id="fcListWrap">
+      <div class="fc-grid" id="fcGrid"></div>
+      <div class="empty-state" id="fcEmpty">
+        <div class="big">📇</div>
+        <div>Aún no tienes palabras guardadas.</div>
+        <div style="font-size:13px;margin-top:6px">Durante una conversación, toca una palabra del tutor y guárdala.</div>
+      </div>
+      <button class="btn btn-ghost" id="studyBtn" style="margin-top:16px;display:none" onclick="openStudy(0)">🎴 Estudiar todas</button>
+    </div>
+
+    <!-- study mode -->
+    <div id="studyWrap" style="display:none">
+      <div class="study-bar">
+        <div class="progress-track"><div class="progress-fill" id="studyProgress"></div></div>
+        <div class="study-meta">
+          <span class="count" id="studyCount">0 de 0 palabras</span>
+          <span class="count" id="studyIndex">0 / 0</span>
+        </div>
+      </div>
+      <div class="study-nav">
+        <button id="prevCard" onclick="navStudy(-1)">← Anterior</button>
+        <button id="nextCard" onclick="navStudy(1)">Siguiente →</button>
+        <button style="margin-left:auto" onclick="closeStudy()">✕ Cerrar</button>
+      </div>
+      <div class="study-hint">Haz clic en la tarjeta para voltearla</div>
+      <div class="flip" id="flipCard" onclick="flipCard(event)">
+        <div class="flip-inner" id="flipInner"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: STATS ===== -->
+  <section id="view-stats" class="view">
+    <div class="section-title">Tu progreso</div>
+    <div class="setting"><h3 id="statWords">0</h3><p>Palabras guardadas</p></div>
+    <div class="setting"><h3 id="statSessions">0</h3><p>Conversaciones iniciadas</p></div>
+    <div class="setting"><h3 id="statMessages">0</h3><p>Mensajes enviados al tutor</p></div>
+  </section>
+
+  <!-- ===== VIEW: SETTINGS ===== -->
+  <section id="view-settings" class="view">
+    <div class="section-title">Ajustes</div>
+
+    <div class="setting">
+      <h3>Formalidad del tutor</h3>
+      <p>Define el registro con el que te habla la IA.</p>
+      <div class="seg-group">
+        <button class="seg-btn" data-formality="slang" onclick="setFormality('slang')">Slang</button>
+        <button class="seg-btn" data-formality="normal" onclick="setFormality('normal')">Normal</button>
+        <button class="seg-btn" data-formality="formal" onclick="setFormality('formal')">Formal</button>
+      </div>
+      <div class="seg-desc" id="formalityDesc"></div>
+    </div>
+
+    <div class="setting">
+      <h3>Motor de IA (Ollama)</h3>
+      <p>La app envía tus mensajes a un servidor Ollama local. Configura la URL y el modelo.</p>
+      <div class="field">
+        <label>URL del servidor</label>
+        <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" />
+      </div>
+      <div class="field">
+        <label>Modelo</label>
+        <input type="text" id="ollamaModel" placeholder="llama3" />
+      </div>
+      <button class="btn btn-ghost" onclick="testConnection()">🔌 Probar conexión</button>
+      <div class="save-note" id="connNote"></div>
+    </div>
+
+    <div class="setting">
+      <h3>Idioma de la voz</h3>
+      <p>Acento usado al escuchar palabras y respuestas del tutor.</p>
+      <div class="field">
+        <select id="ttsLangSelect">
+          <option value="en-US">🇺🇸 Inglés (Estados Unidos)</option>
+          <option value="en-GB">🇬🇧 Inglés (Reino Unido)</option>
+          <option value="en-AU">🇦🇺 Inglés (Australia)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setting">
+      <h3>Datos</h3>
+      <p>Tus flashcards y ajustes se guardan en este navegador.</p>
+      <button class="btn btn-danger" onclick="resetData()">Borrar todas las flashcards</button>
+    </div>
+  </section>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <nav class="nav">
+    <button class="nav-item active" data-view="practice" onclick="switchView('practice')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5l8 5-8 9z" stroke-linejoin="round"/><path d="M14 5l6 7-6 7"/></svg>
+      Práctica
+    </button>
+    <button class="nav-item" data-view="flashcards" onclick="switchView('flashcards')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+      Flashcards
+    </button>
+    <button class="nav-call" id="navCall" onclick="toggleCall()" title="Iniciar/terminar llamada">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.9 15.9 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.2z"/></svg>
+    </button>
+    <button class="nav-item" data-view="stats" onclick="switchView('stats')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-5 4 4 8-8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 8v5h-5"/></svg>
+      Stats
+    </button>
+    <button class="nav-item" data-view="settings" onclick="switchView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.3a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.7 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+      Settings
+    </button>
+  </nav>
 </div>
+
+<!-- popover for saving words -->
+<div id="popover"><div class="popover-content" id="popoverContent"></div></div>
+<div id="toast"></div>
 
 <script>
-    const dict = {
-        "hello": "hola",
-        "world": "mundo",
-        // Agrega más palabras aquí
-    };
+"use strict";
 
-    let speechRecognition, transcription, aiResponses;
+/* =========================================================
+   ESTADO Y PERSISTENCIA
+========================================================= */
+const LS = {
+  flashcards: "ea_flashcards",
+  settings: "ea_settings",
+  stats: "ea_stats",
+};
 
-    function startCallSession() {
-        stopCallSession();
-        speechRecognition = new SpeechRecognition();
-        transcription = [];
-        aiResponses = {};
-        speechRecognition.continuous = true;
-        speechRecognition.interimResults = true;
-        speechRecognition.lang = 'en-US';
-        
-        speechRecognition.onstart = () => {
-            document.getElementById('userInput').value = 'Listening...';
-            document.getElementById('userInput').disabled = true;
-        };
+const DEFAULT_SETTINGS = {
+  formality: "normal",
+  ollamaUrl: "http://localhost:11434",
+  ollamaModel: "llama3",
+  ttsLang: "en-US",
+  voiceName: "",
+};
 
-        speechRecognition.onresult = (event) => {
-            transcription.push(event.results[0][0].transcript);
-            const fullTranscription = transcription.join('');
-            appendMessage("User", fullTranscription);
-            sendToOllamaLocal(fullTranscription);
-        };
+let settings = loadJSON(LS.settings, DEFAULT_SETTINGS);
+let flashcards = loadJSON(LS.flashcards, []);
+let stats = loadJSON(LS.stats, { sessions: 0, messages: 0 });
 
-        speechRecognition.onerror = (error) => {
-            console.error('Error: ', error.name);
-        };
-        
-        speechRecognition.onend = () => {
-            document.getElementById('userInput').value = 'Ready';
-            document.getElementById('userInput').disabled = false;
-        };
+function loadJSON(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+  catch (e) { return fallback; }
+}
+function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+function persist() { saveJSON(LS.settings, settings); saveJSON(LS.flashcards, flashcards); saveJSON(LS.stats, stats); }
 
-        speechRecognition.start();
+const FORMALITY_TEXT = {
+  slang:  "Casual y relajado: usa modismos, jerga y contracciones, como un amigo.",
+  normal: "Conversacional y neutral: claro y amable, ni muy formal ni muy informal.",
+  formal: "Profesional y correcto: gramática cuidada, vocabulario formal y educado.",
+};
+const FORMALITY_PROMPT = {
+  slang:  "Speak casually using slang, idioms and contractions, like a close friend chatting.",
+  normal: "Speak in a friendly, natural conversational tone, neither too formal nor too slangy.",
+  formal: "Speak in a polite, professional and grammatically precise manner.",
+};
+
+/* =========================================================
+   NAVEGACIÓN ENTRE VISTAS
+========================================================= */
+function switchView(name) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  const el = document.getElementById("view-" + name);
+  if (el) el.classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === name));
+  if (name === "flashcards") renderFlashcardList();
+  if (name === "stats") renderStats();
+  if (name === "settings") renderSettings();
+  hidePopover();
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+/* =========================================================
+   SPEECH RECOGNITION (arreglo del bucle del micrófono)
+========================================================= */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isCalling = false;   // sesión de llamada activa
+let isMuted = false;     // micrófono pausado
+let restarting = false;
+
+function micSupported() { return !!SpeechRec; }
+
+function buildRecognition() {
+  const r = new SpeechRec();
+  r.continuous = false;      // una frase a la vez -> evita re-pedir permiso en bucle
+  r.interimResults = false;  // solo resultados finales
+  r.lang = settings.ttsLang || "en-US";
+  r.maxAlternatives = 1;
+
+  r.onstart = () => setMic(true, "Escuchando...");
+  r.onerror = (e) => {
+    setMic(false, "");
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      isCalling = false; updateCallUI();
+      toast("Permiso de micrófono denegado. Habilítalo en el navegador.");
+      setMicText("Micrófono bloqueado");
+    } else if (e.error === "no-speech") {
+      setMicText("No te escuché, intenta de nuevo");
+    } else if (e.error === "audio-capture") {
+      toast("No se detectó micrófono.");
+    } else {
+      setMicText("Listo");
     }
-
-    function endCallSession() {
-        if (speechRecognition) {
-            speechRecognition.stop();
-        }
+  };
+  r.onresult = (event) => {
+    const text = event.results[event.results.length - 1][0].transcript.trim();
+    if (text) { appendMessage("User", text); sendToAI(text); }
+  };
+  // Reinicio controlado: solo si seguimos en llamada y no estamos en mute / esperando IA
+  r.onend = () => {
+    setMic(false, "");
+    if (isCalling && !isMuted && !waitingAI) {
+      restarting = true;
+      setTimeout(() => { if (isCalling && !isMuted && !waitingAI) safeStart(); }, 350);
     }
+  };
+  return r;
+}
 
-    function toggleMute() {
-        // Implementar el mute en el audio
-    }
+function safeStart() {
+  if (!recognition) return;
+  try { recognition.start(); }
+  catch (e) { /* ya está corriendo; ignorar InvalidStateError */ }
+}
 
-    function triggerAiLesson(topic) {
-        const topicInput = document.getElementById('topicInput').value;
-        aiResponses[topic] = [];
-        sendToOllamaLocal(`Start lesson on ${topic}`);
-    }
+function startCallSession() {
+  if (isCalling) return;
+  if (!micSupported()) {
+    toast("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
+    // aún permitimos el chat por texto
+  }
+  isCalling = true; isMuted = false; waitingAI = false;
+  stats.sessions++; persist(); 
+  document.getElementById("lessonCard").style.display = "none";
+  document.getElementById("chatWrap").style.display = "block";
+  clearChat();
+  const topic = document.getElementById("topicInput").value.trim();
+  updateCallUI();
 
-    async function sendToOllamaLocal(userText) {
-        const response = await fetch(`http://localhost:11434/api/chat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: userText
-            })
-        });
+  // saludo / arranque de lección
+  if (topic) sendToAI(`Let's start a lesson about: ${topic}. Begin the conversation.`, true);
+  else sendToAI("Start a friendly English conversation with a short greeting and one question.", true);
 
-        const data = await response.json();
-        aiResponses[data.topic].push(data.response);
-        appendMessage("AI", data.response);
-    }
+  if (micSupported()) { recognition = buildRecognition(); safeStart(); }
+  else setMicText("Modo solo texto (sin micrófono)");
+}
 
-    function appendMessage(sender, text) {
-        const div = document.createElement('div');
-        if (sender === "User") {
-            div.classList.add('userBubble');
-            div.textContent = `You: ${text}`;
-        } else {
-            div.classList.add('aiBubble');
-            div.textContent = `AI: ${data.response} (${data.score})`;
-        }
-        document.getElementById('messageContainer').appendChild(div);
-        scrollChat();
+function endCallSession() {
+  isCalling = false;
+  if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
+  setMic(false, "Llamada finalizada");
+  document.getElementById("lessonCard").style.display = "block";
+  document.getElementById("chatWrap").style.display = "none";
+  updateCallUI();
+}
 
-        // Check for corrections and suggestions
-        checkForCorrections(text, data.response);
-    }
+function toggleCall() {
+  switchView("practice");
+  if (isCalling) endCallSession();
+  else startCallSession();
+}
 
-    function injectCorrectionToLastUserBubble(corr) {
-        const userBubbles = document.getElementsByClassName('userBubble');
-        if (userBubbles.length > 0) {
-            const lastUserBubble = userBubbles[userBubbles.length - 1];
-            lastUserBubble.textContent += ` Correction: ${corr.correctSentence} (${corr.score})`;
-        }
-    }
+function toggleMute() {
+  if (!isCalling) return;
+  isMuted = !isMuted;
+  const btn = document.getElementById("muteBtn");
+  if (isMuted) {
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+    btn.textContent = "🎤 Reanudar mic"; setMicText("Micrófono en pausa");
+  } else {
+    btn.textContent = "🎤 Pausar mic"; safeStart();
+  }
+}
 
-    function showPopover(event, word) {
-        event.preventDefault();
-        const popoverContainer = document.getElementById('popover-container');
-        popoverContainer.style.left = `${event.pageX}px`;
-        popoverContainer.style.top = `${event.pageY}px`;
+function setMic(live, text) {
+  document.getElementById("micDot").classList.toggle("live", live);
+  if (text !== "") setMicText(text);
+}
+function setMicText(t) { document.getElementById("micText").textContent = t; }
+function updateCallUI() {
+  const nav = document.getElementById("navCall");
+  nav.classList.toggle("in-call", isCalling);
+}
 
-        let content;
-        if (dict[word]) {
-            content = `<p>Traducción: ${dict[word]}</p>`;
-        } else {
-            content = `<button onclick="saveWord('${word}')">Guardar</button>`;
-        }
+/* =========================================================
+   CHAT + IA
+========================================================= */
+let waitingAI = false;
 
-        popoverContainer.innerHTML = `
-            <div class="popover-content">
-                ${content}
-            </div>
-        `;
-    }
+function clearChat() {
+  const c = document.getElementById("messageContainer");
+  c.innerHTML = '<div class="chat-empty" id="chatEmpty">Conectando con tu tutor...</div>';
+}
 
-    function saveWord(word) {
-        // Implementar la funcionalidad de guardar palabras
-    }
+function appendMessage(sender, text, extra) {
+  const empty = document.getElementById("chatEmpty");
+  if (empty) empty.remove();
+  const container = document.getElementById("messageContainer");
+  const div = document.createElement("div");
+  div.className = "bubble " + (sender === "User" ? "userBubble" : "aiBubble");
 
-    function checkForCorrections(userText, aiResponse) {
-        const words = userText.split(/\s+/);
-        for (let i = 0; i < words.length; i++) {
-            if (!aiResponse.includes(words[i])) {
-                // Si el AI no menciona la palabra en la respuesta, busque en el diccionario
-                if (dict[words[i]]) {
-                    aiResponses[userText].push(`"${words[i]}" no fue mencionado por el AI. Traducción: ${dict[words[i]]}`);
-                }
-            }
-        }
-    }
+  const who = document.createElement("span");
+  who.className = "who";
+  who.textContent = sender === "User" ? "Tú" : "Tutor";
+  div.appendChild(who);
 
-    function scrollChat() {
-        const messageContainer = document.getElementById('messageContainer');
-        messageContainer.scrollTop = messageContainer.scrollHeight;
-    }
+  const body = document.createElement("div");
+  if (sender === "AI") {
+    body.innerHTML = makeWordsClickable(text);
+  } else {
+    body.textContent = text;
+  }
+  div.appendChild(body);
 
-    // Flashcard functionality
-    let flashcards = [];
+  if (extra) {
+    const corr = document.createElement("div");
+    corr.className = "correction";
+    corr.textContent = extra;
+    div.appendChild(corr);
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
 
-    function saveWord(word) {
-        if (!flashcards.includes(word)) {
-            flashcards.push(word);
-            updateFlashcardList();
-        }
-    }
+function makeWordsClickable(text) {
+  // envuelve palabras en spans para poder guardarlas como flashcards
+  const esc = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return esc.replace(/\b([A-Za-z][A-Za-z'-]{1,})\b/g, (m) =>
+    `<span class="word" onclick="onWordClick(event, this)">${m}</span>`);
+}
 
-    function updateFlashcardList() {
-        const flashcardList = document.getElementById('flashcardList');
-        flashcardList.innerHTML = '';
-        flashcards.forEach(flashcard => {
-            const li = document.createElement('li');
-            li.textContent = flashcard;
-            flashcardList.appendChild(li);
-        });
-    }
+function showTyping() {
+  const container = document.getElementById("messageContainer");
+  const d = document.createElement("div");
+  d.className = "bubble aiBubble"; d.id = "typingBubble";
+  d.innerHTML = '<span class="who">Tutor</span><div>escribiendo…</div>';
+  container.appendChild(d);
+  container.scrollTop = container.scrollHeight;
+}
+function removeTyping() { const t = document.getElementById("typingBubble"); if (t) t.remove(); }
+
+function sendManual() {
+  const input = document.getElementById("manualInput");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  appendMessage("User", text);
+  sendToAI(text);
+}
+
+function systemPrompt() {
+  return `You are a friendly English tutor for a Spanish-speaking learner. ${FORMALITY_PROMPT[settings.formality] || ""} Keep replies short (1-3 sentences). If the user makes a grammar mistake, gently correct it. Always reply in English and end with a question to keep the conversation going.`;
+}
+
+async function sendToAI(userText, isSystemTrigger) {
+  if (!isSystemTrigger) { stats.messages++; persist(); }
+  waitingAI = true;
+  if (recognition) { try { recognition.stop(); } catch (e) {} } // no escuchar mientras responde
+  showTyping();
+
+  const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: settings.ollamaModel || "llama3",
+        stream: false,
+        messages: [
+          { role: "system", content: systemPrompt() },
+          { role: "user", content: userText },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const reply = (data && data.message && data.message.content) ? data.message.content.trim()
+                : (data && data.response) ? data.response.trim()
+                : "(sin respuesta)";
+    removeTyping();
+    appendMessage("AI", reply);
+    speak(reply);
+  } catch (err) {
+    removeTyping();
+    appendMessage("AI", "⚠️ No pude conectar con el motor de IA (Ollama). Revisa la URL y el modelo en Settings, y que el servidor esté corriendo. Detalle: " + err.message);
+  } finally {
+    waitingAI = false;
+    // reanudar escucha si seguimos en llamada
+    if (isCalling && !isMuted && micSupported()) { setTimeout(safeStart, 400); }
+  }
+}
+
+/* =========================================================
+   TEXT TO SPEECH
+========================================================= */
+let voices = [];
+function loadVoices() {
+  voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const sel = document.getElementById("voiceSelect");
+  sel.innerHTML = "";
+  const enVoices = voices.filter(v => /^en/i.test(v.lang));
+  (enVoices.length ? enVoices : voices).forEach(v => {
+    const o = document.createElement("option");
+    o.value = v.name; o.textContent = v.name.replace(/Microsoft|Google/gi,"").trim() + " (" + v.lang + ")";
+    if (v.name === settings.voiceName) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (!sel.options.length) { const o = document.createElement("option"); o.textContent = "Voz por defecto"; sel.appendChild(o); }
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function speak(text, langOverride) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = langOverride || settings.ttsLang || "en-US";
+  const v = voices.find(x => x.name === settings.voiceName);
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}
+
+/* =========================================================
+   GUARDAR PALABRAS / POPOVER
+========================================================= */
+let pendingWord = "";
+function onWordClick(event, el) {
+  event.stopPropagation();
+  const word = el.textContent.toLowerCase().replace(/[^a-z'-]/g,"");
+  if (!word) return;
+  pendingWord = word;
+  const exists = flashcards.some(f => f.word === word);
+  const pop = document.getElementById("popover");
+  const content = document.getElementById("popoverContent");
+  content.innerHTML = `
+    <div class="pw">${word}</div>
+    <div class="pt">${exists ? "Ya está en tus flashcards" : "Agregar a flashcards"}</div>
+    ${exists ? "" : `<button onclick="saveWord('${word}')">＋ Guardar palabra</button>`}
+  `;
+  pop.style.left = event.clientX + "px";
+  pop.style.top = event.clientY + "px";
+  pop.classList.add("show");
+}
+function hidePopover() { document.getElementById("popover").classList.remove("show"); }
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#popover") && !e.target.closest(".word")) hidePopover();
+});
+
+async function saveWord(word) {
+  hidePopover();
+  if (flashcards.some(f => f.word === word)) { toast("Ya la tienes guardada"); return; }
+  // placeholder mientras la IA genera la tarjeta
+  const card = { word, status: "loading", translation: "", pos: "", added: Date.now() };
+  flashcards.push(card);
+  persist();
+  toast(`"${word}" guardada · generando tarjeta…`);
+  const data = await generateFlashcard(word);
+  Object.assign(card, data, { status: "ready" });
+  persist();
+  if (document.getElementById("view-flashcards").classList.contains("active")) renderFlashcardList();
+}
+
+async function generateFlashcard(word) {
+  const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  const instruction = `Create a study flashcard for the English word "${word}" for a Spanish speaker. Respond ONLY with valid JSON, no markdown, with this exact shape:
+{"translation":"<spanish translation>","pos":"<part of speech: verb/noun/adjective...>","conjugations":[{"label":"present","value":"..."},{"label":"past","value":"..."},{"label":"past participle","value":"..."},{"label":"gerund","value":"..."}],"correctExample":"<a correct English sentence>","commonError":"<a common incorrect sentence learners make>","otherMeanings":[{"pos":"noun","meaning":"<other spanish meaning>","example":"<short example>"}],"frequency":<1-5 integer>,"tip":"<one helpful study tip in Spanish>"}`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: settings.ollamaModel || "llama3",
+        stream: false,
+        format: "json",
+        messages: [{ role: "user", content: instruction }],
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const raw = (data.message && data.message.content) || data.response || "{}";
+    const json = JSON.parse(extractJSON(raw));
+    return normalizeCard(json);
+  } catch (e) {
+    // fallback offline
+    return normalizeCard({ translation: "(traducción no disponible)", pos: "", frequency: 3,
+      tip: "No se pudo generar con IA. Revisa la conexión con Ollama en Settings." });
+  }
+}
+
+function extractJSON(s) {
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  return (a >= 0 && b > a) ? s.slice(a, b + 1) : "{}";
+}
+function normalizeCard(j) {
+  return {
+    translation: j.translation || "",
+    pos: j.pos || "",
+    conjugations: Array.isArray(j.conjugations) ? j.conjugations : [],
+    correctExample: j.correctExample || "",
+    commonError: j.commonError || "",
+    otherMeanings: Array.isArray(j.otherMeanings) ? j.otherMeanings : [],
+    frequency: Math.max(0, Math.min(5, parseInt(j.frequency) || 0)),
+    tip: j.tip || "",
+  };
+}
+
+/* =========================================================
+   LISTA Y ESTUDIO DE FLASHCARDS
+========================================================= */
+function renderFlashcardList() {
+  closeStudy();
+  const grid = document.getElementById("fcGrid");
+  const empty = document.getElementById("fcEmpty");
+  const studyBtn = document.getElementById("studyBtn");
+  grid.innerHTML = "";
+  if (!flashcards.length) { empty.style.display = "block"; studyBtn.style.display = "none"; return; }
+  empty.style.display = "none"; studyBtn.style.display = "block";
+  flashcards.forEach((f, i) => {
+    const c = document.createElement("div");
+    c.className = "fc-chip";
+    c.onclick = () => openStudy(i);
+    c.innerHTML = `<div class="w">${f.word}</div>
+      <div class="t">${f.status === "loading" ? "generando…" : (f.translation || "")}</div>
+      ${f.pos ? `<span class="pos">${f.pos}</span>` : ""}`;
+    grid.appendChild(c);
+  });
+}
+
+let studyIndex = 0;
+function openStudy(i) {
+  if (!flashcards.length) return;
+  studyIndex = i;
+  document.getElementById("fcListWrap").style.display = "none";
+  document.getElementById("studyWrap").style.display = "block";
+  renderStudyCard();
+}
+function closeStudy() {
+  const sw = document.getElementById("studyWrap");
+  if (sw) sw.style.display = "none";
+  const lw = document.getElementById("fcListWrap");
+  if (lw) lw.style.display = "block";
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+function navStudy(dir) {
+  studyIndex = Math.max(0, Math.min(flashcards.length - 1, studyIndex + dir));
+  renderStudyCard();
+}
+function flipCard(e) {
+  if (e && e.target.closest(".mini-speak, .listen-btn, .card-actions")) return;
+  document.getElementById("flipCard").classList.toggle("flipped");
+}
+
+function renderStudyCard() {
+  const f = flashcards[studyIndex];
+  const total = flashcards.length;
+  document.getElementById("studyProgress").style.width = (((studyIndex + 1) / total) * 100) + "%";
+  document.getElementById("studyCount").textContent = `${studyIndex + 1} de ${total} palabras`;
+  document.getElementById("studyIndex").textContent = `${studyIndex + 1} / ${total}`;
+  document.getElementById("prevCard").disabled = studyIndex === 0;
+  document.getElementById("nextCard").disabled = studyIndex === total - 1;
+
+  const flip = document.getElementById("flipCard");
+  flip.classList.remove("flipped");
+
+  const inner = document.getElementById("flipInner");
+  if (f.status === "loading") {
+    inner.innerHTML = `
+      <div class="face front"><div class="big-word">${f.word}</div><div class="flip-cta">generando tarjeta…</div></div>
+      <div class="face back"><div class="loading-card"><div class="spinner"></div>La IA está creando esta tarjeta…</div></div>`;
+    return;
+  }
+
+  const conj = (f.conjugations || []).map(c => `
+    <div class="conj"><span>${c.label}: <b>${c.value}</b></span>
+      <button class="mini-speak" onclick="speak('${escAttr(c.value)}')">🔊</button></div>`).join("");
+
+  const others = (f.otherMeanings || []).map(o => `
+    <div class="other-mean"><span class="pos-badge">${o.pos || ""}</span> ${o.meaning || ""}${o.example ? ` — <i>${o.example}</i>` : ""}</div>`).join("");
+
+  const segs = Array.from({length:5}, (_,k) => `<div class="seg ${k < f.frequency ? "on":""}"></div>`).join("");
+  const freqLabel = f.frequency >= 4 ? "high" : f.frequency >= 2 ? "medium" : "low";
+
+  inner.innerHTML = `
+    <div class="face front">
+      <div class="big-word">${f.word}</div>
+      ${f.pos ? `<span class="pos-badge">${f.pos}</span>` : ""}
+      <div class="flip-cta">Haz clic para ver el significado</div>
+    </div>
+    <div class="face back">
+      <div class="card-head">
+        <span class="card-word">${f.word}</span>
+        ${f.pos ? `<span class="pos-badge">${f.pos}</span>` : ""}
+        <button class="listen-btn" onclick="speak('${escAttr(f.word)}')">🔊 Escuchar</button>
+      </div>
+      ${f.translation ? `<div class="translation">${f.translation}</div>` : ""}
+      ${conj ? `<div class="blk"><div class="blk-title">Conjugaciones</div><div class="conj-grid">${conj}</div></div>` : ""}
+      ${f.correctExample ? `<div class="blk"><div class="blk-title">✓ Ejemplo correcto</div><div class="example good">${f.correctExample}</div></div>` : ""}
+      ${f.commonError ? `<div class="blk"><div class="blk-title">✗ Error común</div><div class="example bad">${f.commonError}</div></div>` : ""}
+      ${others ? `<div class="blk"><div class="blk-title">Otros significados</div>${others}</div>` : ""}
+      ${f.frequency ? `<div class="blk"><div class="blk-title">Qué tan usada</div><div class="freq">${segs}<span class="label">${freqLabel}</span></div></div>` : ""}
+      ${f.tip ? `<div class="tip"><div class="tip-h">💡 Te recomendamos</div><div class="tip-b">${f.tip}</div></div>` : ""}
+      <div class="card-actions">
+        <button onclick="event.stopPropagation(); regenCard(${studyIndex})">↻ Regenerar</button>
+        <button class="del" onclick="event.stopPropagation(); deleteCard(${studyIndex})">🗑 Eliminar</button>
+      </div>
+    </div>`;
+}
+
+function escAttr(s) { return String(s).replace(/'/g, "\\'").replace(/"/g,'&quot;'); }
+
+async function regenCard(i) {
+  const f = flashcards[i];
+  f.status = "loading"; persist(); renderStudyCard();
+  const data = await generateFlashcard(f.word);
+  Object.assign(f, data, { status: "ready" }); persist();
+  if (studyIndex === i) renderStudyCard();
+}
+function deleteCard(i) {
+  flashcards.splice(i, 1); persist();
+  if (!flashcards.length) { closeStudy(); renderFlashcardList(); return; }
+  studyIndex = Math.min(studyIndex, flashcards.length - 1);
+  renderStudyCard();
+  toast("Flashcard eliminada");
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+function renderStats() {
+  document.getElementById("statWords").textContent = flashcards.length;
+  document.getElementById("statSessions").textContent = stats.sessions;
+  document.getElementById("statMessages").textContent = stats.messages;
+}
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+function renderSettings() {
+  document.querySelectorAll(".seg-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.formality === settings.formality));
+  document.getElementById("formalityDesc").textContent = FORMALITY_TEXT[settings.formality];
+  document.getElementById("ollamaUrl").value = settings.ollamaUrl;
+  document.getElementById("ollamaModel").value = settings.ollamaModel;
+  document.getElementById("ttsLangSelect").value = settings.ttsLang;
+}
+function setFormality(f) {
+  settings.formality = f; persist(); renderSettings();
+  toast("Formalidad: " + f);
+}
+document.addEventListener("input", (e) => {
+  if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
+  if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value.trim(); persist(); }
+});
+document.addEventListener("change", (e) => {
+  if (e.target.id === "ttsLangSelect") { settings.ttsLang = e.target.value; persist(); if (recognition) recognition.lang = settings.ttsLang; }
+  if (e.target.id === "voiceSelect") { settings.voiceName = e.target.value; persist(); }
+});
+
+async function testConnection() {
+  const note = document.getElementById("connNote");
+  note.style.color = "var(--text-dim)"; note.textContent = "Probando…";
+  const url = (settings.ollamaUrl || "").replace(/\/$/, "") + "/api/tags";
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const models = (data.models || []).map(m => m.name).join(", ");
+    note.style.color = "var(--green)";
+    note.textContent = "✓ Conectado. Modelos: " + (models || "ninguno instalado");
+  } catch (e) {
+    note.style.color = "var(--red)";
+    note.textContent = "✗ No se pudo conectar. ¿Ollama está corriendo? (" + e.message + ")";
+  }
+}
+
+function resetData() {
+  if (!confirm("¿Borrar TODAS las flashcards? Esto no se puede deshacer.")) return;
+  flashcards = []; persist();
+  renderFlashcardList(); renderStats();
+  toast("Flashcards borradas");
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+function init() {
+  // migrar settings faltantes
+  settings = Object.assign({}, DEFAULT_SETTINGS, settings);
+  loadVoices();
+  renderSettings();
+  if (!micSupported()) {
+    setMicText("Tu navegador no soporta voz (usa Chrome/Edge)");
+  }
+}
+init();
 </script>
-
-<div id="popover-container" class="hidden">
-    <div class="popover-content"></div>
-</div>
-
 </body>
 </html>
