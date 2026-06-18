@@ -800,6 +800,7 @@ function safeParse(s) {
    TEXT TO SPEECH
 ========================================================= */
 let voices = [];
+let ttsKeepAlive = null;
 
 // Puntúa las voces para elegir la más natural disponible.
 function voiceScore(v) {
@@ -839,7 +840,7 @@ function loadVoices() {
     const o = document.createElement("option");
     o.value = v.name;
     const nice = v.name.replace(/Microsoft|Google/gi, "").trim();
-    const natural = /natural|neural|premium|enhanced|online/i.test(v.name) ? " ✨" : "";
+    const natural = /natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ✨" : "";
     o.textContent = nice + " (" + v.lang + ")" + natural;
     if (v.name === settings.voiceName) o.selected = true;
     sel.appendChild(o);
@@ -851,13 +852,13 @@ if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = loadVoices;
 function speak(text, langOverride) {
   if (!window.speechSynthesis) { if (isCalling && !isMuted) setTimeout(maybeStart, 200); return; }
   window.speechSynthesis.cancel();
+  if (ttsKeepAlive) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; }
   speaking = true;
   setMic(false, "Tutor speaking…");
 
   const u = new SpeechSynthesisUtterance(text);
   const lang = langOverride || settings.practiceLang || "en-US";
   u.lang = lang;
-  // voz: la elegida o la mejor para el idioma
   let v = voices.find(x => x.name === settings.voiceName && x.lang && x.lang.toLowerCase().startsWith(lang.slice(0,2)));
   if (!v) v = bestVoiceFor(lang.slice(0, 2));
   if (v) u.voice = v;
@@ -866,11 +867,17 @@ function speak(text, langOverride) {
   u.volume = 1.0;
   u.onstart = () => { speaking = true; };
   const resume = () => {
+    if (ttsKeepAlive) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; }
     speaking = false;
     if (isCalling && !isMuted) { setMic(false, "Listening..."); setTimeout(maybeStart, 200); }
   };
   u.onend = resume; u.onerror = resume;
   window.speechSynthesis.speak(u);
+  // Workaround del bug de Chrome: la síntesis se pausa sola y corta frases largas.
+  ttsKeepAlive = setInterval(() => {
+    if (!window.speechSynthesis.speaking) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; return; }
+    window.speechSynthesis.pause(); window.speechSynthesis.resume();
+  }, 9000);
 }
 
 /* =========================================================
