@@ -7,32 +7,33 @@
 <style>
   /* ============ DARK THEME / TOKENS ============ */
   :root {
-    --bg-0: #0b0f1a;
-    --bg-1: #111726;
-    --bg-2: #161d2e;
-    --bg-3: #1d2638;
-    --surface: #141b2b;
-    --surface-2: #1a2335;
-    --border: #26314a;
-    --border-soft: #1f2840;
-    --text: #e7ecf5;
-    --text-dim: #9aa6bd;
-    --text-mute: #6b7689;
-    --accent: #ffc861;
-    --accent-strong: #ffb838;
-    --accent-ink: #2a1d00;
-    --blue: #3b82f6;
-    --blue-soft: #1e3a5f;
-    --green: #34d399;
-    --green-soft: #123a2e;
-    --red: #f87171;
-    --red-soft: #3a1620;
-    --purple: #a78bfa;
-    --purple-soft: #241a3d;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 10px 30px rgba(0,0,0,.45);
-    --nav-h: 76px;
+    --bg-0: #0a0607;
+    --bg-1: rgba(22,12,14,.55);
+    --bg-2: rgba(40,20,24,.45);
+    --bg-3: rgba(255,255,255,.08);
+    --surface: rgba(34,22,25,.55);
+    --surface-2: rgba(52,30,35,.5);
+    --border: rgba(255,255,255,.13);
+    --border-soft: rgba(255,255,255,.07);
+    --text: #f6f0f1;
+    --text-dim: #c0b2b5;
+    --text-mute: #8a7c80;
+    --accent: #ff453a;
+    --accent-strong: #d70015;
+    --accent-ink: #ffffff;
+    --blue: #ff5a4d;            /* navegación activa en rojo */
+    --blue-soft: rgba(255,69,58,.18);
+    --green: #32d74b;
+    --green-soft: rgba(20,90,55,.4);
+    --red: #ff6b6b;
+    --red-soft: rgba(120,28,38,.45);
+    --purple: #ff9aa2;
+    --purple-soft: rgba(120,40,52,.4);
+    --radius: 20px;
+    --radius-sm: 13px;
+    --shadow: 0 14px 44px rgba(0,0,0,.55);
+    --glass: blur(22px) saturate(180%);
+    --nav-h: 78px;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -42,9 +43,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--text);
     background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(124,77,255,.12), transparent 60%),
-      radial-gradient(900px 500px at 0% 100%, rgba(59,130,246,.10), transparent 55%),
-      linear-gradient(180deg, #0b0f1a 0%, #0a0e18 100%);
+      radial-gradient(1100px 620px at 82% -12%, rgba(255,69,58,.26), transparent 60%),
+      radial-gradient(900px 520px at 5% 8%, rgba(215,0,21,.20), transparent 55%),
+      radial-gradient(800px 600px at 100% 100%, rgba(255,120,90,.14), transparent 60%),
+      radial-gradient(700px 500px at 0% 100%, rgba(140,10,30,.22), transparent 55%),
+      linear-gradient(180deg, #0a0607 0%, #070405 100%);
     background-attachment: fixed;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
@@ -87,7 +90,7 @@
   .lesson-head { display:flex; gap:16px; align-items:flex-start; }
   .lesson-num {
     flex:0 0 auto; width:58px; height:58px; border-radius:14px;
-    background: rgba(255,200,97,.12); color:var(--accent);
+    background: rgba(255,69,58,.16); color:var(--accent);
     display:grid; place-items:center; font-weight:800; font-size:18px;
   }
   .lesson-title { font-size:22px; font-weight:800; line-height:1.25; margin:2px 0 0; }
@@ -118,7 +121,7 @@
   }
   .bubble { max-width:86%; padding:11px 14px; border-radius:16px; font-size:15px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
   .bubble .who { display:block; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-mute); margin-bottom:3px; }
-  .userBubble { align-self:flex-end; background: var(--blue-soft); border:1px solid #2a4f7a; border-bottom-right-radius:5px; }
+  .userBubble { align-self:flex-end; background: var(--blue-soft); border:1px solid rgba(255,69,58,.35); border-bottom-right-radius:5px; }
   .aiBubble { align-self:flex-start; background: var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:5px; }
   .aiBubble .word { cursor:pointer; border-bottom:1px dashed transparent; }
   .aiBubble .word:hover { border-bottom-color: var(--accent); }
@@ -192,9 +195,9 @@
   .freq .seg { width:34px; height:8px; border-radius:3px; background:var(--bg-3); }
   .freq .seg.on { background:var(--green); }
   .freq .label { margin-left:8px; color:var(--text-dim); font-size:13px; }
-  .tip { background:var(--purple-soft); border:1px solid #3a2d63; border-radius:12px; padding:13px 15px; margin-top:14px; }
-  .tip .tip-h { color:#d7c9ff; font-weight:700; font-size:14px; margin-bottom:5px; }
-  .tip .tip-b { color:#bcaee0; font-size:14px; line-height:1.5; }
+  .tip { background:var(--purple-soft); border:1px solid rgba(255,120,120,.28); border-radius:12px; padding:13px 15px; margin-top:14px; }
+  .tip .tip-h { color:#ffd0d0; font-weight:700; font-size:14px; margin-bottom:5px; }
+  .tip .tip-b { color:#ecc4c8; font-size:14px; line-height:1.5; }
   .card-actions { display:flex; gap:10px; margin-top:16px; }
   .card-actions button { flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px; cursor:pointer; font-size:14px; }
   .card-actions .del { color:var(--red); }
@@ -224,7 +227,7 @@
   /* ============ BOTTOM NAV ============ */
   .nav {
     position:fixed; left:0; right:0; bottom:0; height:var(--nav-h);
-    background: rgba(13,18,30,.92); backdrop-filter: blur(14px);
+    background: rgba(18,10,12,.55); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
     border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-around;
     padding:0 max(10px, env(safe-area-inset-bottom)); z-index:50;
@@ -232,8 +235,8 @@
   .nav-item { background:none; border:none; color:var(--text-mute); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:6px 10px; transition:color .15s ease; }
   .nav-item svg { width:24px; height:24px; }
   .nav-item.active { color:var(--blue); }
-  .nav-call { width:58px; height:58px; border-radius:50%; margin-top:-26px; background: linear-gradient(180deg, #3b82f6, #2563eb); color:#fff; box-shadow: 0 8px 22px rgba(37,99,235,.5); display:grid; place-items:center; border:3px solid var(--bg-0); }
-  .nav-call.in-call { background: linear-gradient(180deg, #f87171, #ef4444); box-shadow:0 8px 22px rgba(239,68,68,.5); }
+  .nav-call { width:58px; height:58px; border-radius:50%; margin-top:-26px; background: linear-gradient(180deg, #ff5a4d, #d70015); color:#fff; box-shadow: 0 8px 22px rgba(255,69,58,.5); display:grid; place-items:center; border:3px solid rgba(255,255,255,.12); }
+  .nav-call.in-call { background: linear-gradient(180deg, #6e6e73, #3a3a3c); box-shadow:0 8px 22px rgba(0,0,0,.5); }
   .nav-call svg { width:26px; height:26px; }
 
   /* ============ POPOVER ============ */
@@ -247,7 +250,7 @@
   /* ============ TOAST ============ */
   #toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%; }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  #lessonBanner { background:rgba(255,200,97,.12); border:1px solid #4a3a18; color:var(--accent); border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:14px; font-weight:600; }
+  #lessonBanner { background:rgba(255,69,58,.14); border:1px solid rgba(255,69,58,.32); color:var(--accent); border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:14px; font-weight:600; backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
 
   /* ============ GRAMMAR MODAL ============ */
   .modal-overlay { position:fixed; inset:0; z-index:150; display:none; background:rgba(5,8,15,.72); backdrop-filter:blur(4px); padding:18px; }
@@ -270,6 +273,16 @@
   .g-item .g-check { flex:0 0 auto; width:18px; color:var(--green); opacity:0; }
   .g-item.done .g-check { opacity:1; }
   .g-item.done { color:var(--text-mute); }
+
+  /* ============ APPLE GLASS (translucent surfaces) ============ */
+  .lesson-card, .chat, .setting, .fc-chip, .face, .voice-pill, .topic-input,
+  .modal, .popover-content, #toast, .userBubble, .aiBubble, .btn-ghost,
+  .field input, .field select, .seg-group, .tab, .study-nav button,
+  .listen-btn, .mini-speak, .modal-close {
+    backdrop-filter: var(--glass);
+    -webkit-backdrop-filter: var(--glass);
+  }
+  .brand .logo, .nav-call { box-shadow: 0 8px 26px rgba(255,69,58,.45); }
 </style>
 </head>
 <body>
