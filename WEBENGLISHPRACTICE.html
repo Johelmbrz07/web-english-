@@ -378,10 +378,10 @@
         <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" />
       </div>
       <div class="field">
-        <label>Modelo</label>
-        <input type="text" id="ollamaModel" placeholder="llama3" />
+        <label>Modelo (se llena con tus modelos instalados)</label>
+        <select id="ollamaModel"></select>
       </div>
-      <button class="btn btn-ghost" onclick="testConnection()">🔌 Probar conexión</button>
+      <button class="btn btn-ghost" onclick="testConnection()">🔌 Probar conexión y recargar modelos</button>
       <div class="save-note" id="connNote"></div>
     </div>
 
@@ -506,78 +506,117 @@ const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let isCalling = false;   // sesión de llamada activa
 let isMuted = false;     // micrófono pausado
-let restarting = false;
+let listening = false;   // recognition activo ahora mismo
+let speaking = false;    // el TTS está hablando
+let micStream = null;    // MediaStream persistente -> evita re-pedir permiso (bucle)
+let restartGuard = { count: 0, last: 0 };
 
 function micSupported() { return !!SpeechRec; }
 
+// Pide permiso del micrófono UNA vez y mantiene el stream abierto.
+// Mantener el stream vivo evita que el navegador vuelva a pedir permiso
+// cada vez que reiniciamos el reconocimiento (causa del bucle).
+async function ensureMicPermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  if (micStream && micStream.active) return true;
+  try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); return true; }
+  catch (e) { micStream = null; return false; }
+}
+function releaseMic() {
+  if (micStream) { try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {} micStream = null; }
+}
+
 function buildRecognition() {
   const r = new SpeechRec();
-  r.continuous = false;      // una frase a la vez -> evita re-pedir permiso en bucle
+  r.continuous = false;      // una frase a la vez
   r.interimResults = false;  // solo resultados finales
   r.lang = settings.ttsLang || "en-US";
   r.maxAlternatives = 1;
 
-  r.onstart = () => setMic(true, "Escuchando...");
+  r.onstart = () => { listening = true; setMic(true, "Escuchando..."); };
   r.onerror = (e) => {
+    listening = false;
     setMic(false, "");
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      isCalling = false; updateCallUI();
+      isCalling = false; releaseMic(); updateCallUI();
       toast("Permiso de micrófono denegado. Habilítalo en el navegador.");
-      setMicText("Micrófono bloqueado");
+      setMicText("Micrófono bloqueado — usa el chat por texto");
     } else if (e.error === "no-speech") {
-      setMicText("No te escuché, intenta de nuevo");
+      setMicText("Sigo escuchando…");
     } else if (e.error === "audio-capture") {
       toast("No se detectó micrófono.");
+      setMicText("Sin micrófono");
+    } else if (e.error === "aborted") {
+      /* normal al parar manualmente */
     } else {
       setMicText("Listo");
     }
   };
   r.onresult = (event) => {
     const text = event.results[event.results.length - 1][0].transcript.trim();
-    if (text) { appendMessage("User", text); sendToAI(text); }
+    if (text) { restartGuard.count = 0; appendMessage("User", text); sendToAI(text); }
   };
-  // Reinicio controlado: solo si seguimos en llamada y no estamos en mute / esperando IA
   r.onend = () => {
+    listening = false;
     setMic(false, "");
-    if (isCalling && !isMuted && !waitingAI) {
-      restarting = true;
-      setTimeout(() => { if (isCalling && !isMuted && !waitingAI) safeStart(); }, 350);
-    }
+    // reanudar solo si seguimos en llamada y nadie más está usando el audio
+    if (isCalling && !isMuted && !waitingAI && !speaking) setTimeout(maybeStart, 300);
   };
   return r;
 }
 
-function safeStart() {
-  if (!recognition) return;
+// Arranca el reconocimiento con freno anti-bucle.
+function maybeStart() {
+  if (!recognition || listening || isMuted || !isCalling || waitingAI || speaking) return;
+  const now = Date.now();
+  if (now - restartGuard.last < 900) restartGuard.count++; else restartGuard.count = 0;
+  restartGuard.last = now;
+  if (restartGuard.count > 8) {
+    setMicText("Reconocimiento pausado (posible bucle). Revisa el permiso del micrófono o usa el chat por texto.");
+    return;
+  }
   try { recognition.start(); }
-  catch (e) { /* ya está corriendo; ignorar InvalidStateError */ }
+  catch (e) { /* InvalidStateError: ya está corriendo */ }
 }
 
 function startCallSession() {
   if (isCalling) return;
-  if (!micSupported()) {
-    toast("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
-    // aún permitimos el chat por texto
+  startCallAsync();
+}
+
+async function startCallAsync() {
+  let micOk = false;
+  if (micSupported()) {
+    micOk = await ensureMicPermission();
+    if (!micOk) toast("Sin permiso de micrófono. Puedes seguir con el chat por texto.");
+  } else {
+    toast("Tu navegador no soporta voz. Usa Chrome o Edge (o el chat por texto).");
   }
+
   isCalling = true; isMuted = false; waitingAI = false;
-  stats.sessions++; persist(); 
+  restartGuard = { count: 0, last: 0 };
+  stats.sessions++; persist();
   document.getElementById("lessonCard").style.display = "none";
   document.getElementById("chatWrap").style.display = "block";
   clearChat();
   const topic = document.getElementById("topicInput").value.trim();
   updateCallUI();
 
+  // construir reconocimiento (arrancará tras el saludo / TTS, vía maybeStart)
+  if (micSupported() && micOk) { recognition = buildRecognition(); }
+  else setMicText("Modo solo texto");
+
   // saludo / arranque de lección
   if (topic) sendToAI(`Let's start a lesson about: ${topic}. Begin the conversation.`, true);
   else sendToAI("Start a friendly English conversation with a short greeting and one question.", true);
-
-  if (micSupported()) { recognition = buildRecognition(); safeStart(); }
-  else setMicText("Modo solo texto (sin micrófono)");
 }
 
 function endCallSession() {
-  isCalling = false;
-  if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
+  isCalling = false; isMuted = false; listening = false;
+  if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  speaking = false;
+  releaseMic();
   setMic(false, "Llamada finalizada");
   document.getElementById("lessonCard").style.display = "block";
   document.getElementById("chatWrap").style.display = "none";
@@ -595,10 +634,11 @@ function toggleMute() {
   isMuted = !isMuted;
   const btn = document.getElementById("muteBtn");
   if (isMuted) {
-    if (recognition) { try { recognition.stop(); } catch (e) {} }
+    if (recognition) { try { recognition.abort(); } catch (e) {} }
+    listening = false;
     btn.textContent = "🎤 Reanudar mic"; setMicText("Micrófono en pausa");
   } else {
-    btn.textContent = "🎤 Pausar mic"; safeStart();
+    btn.textContent = "🎤 Pausar mic"; maybeStart();
   }
 }
 
@@ -686,7 +726,7 @@ function systemPrompt() {
 async function sendToAI(userText, isSystemTrigger) {
   if (!isSystemTrigger) { stats.messages++; persist(); }
   waitingAI = true;
-  if (recognition) { try { recognition.stop(); } catch (e) {} } // no escuchar mientras responde
+  if (recognition && listening) { try { recognition.abort(); } catch (e) {} listening = false; } // no escuchar mientras responde
   showTyping();
 
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
@@ -703,21 +743,25 @@ async function sendToAI(userText, isSystemTrigger) {
         ],
       }),
     });
-    if (!res.ok) throw new Error("HTTP " + res.status);
+    if (!res.ok) {
+      let detail = "HTTP " + res.status;
+      if (res.status === 404) detail = `el modelo "${settings.ollamaModel}" no existe en Ollama (HTTP 404). Elígelo en Settings.`;
+      throw new Error(detail);
+    }
     const data = await res.json();
     const reply = (data && data.message && data.message.content) ? data.message.content.trim()
                 : (data && data.response) ? data.response.trim()
                 : "(sin respuesta)";
     removeTyping();
+    waitingAI = false;
     appendMessage("AI", reply);
-    speak(reply);
+    speak(reply); // speak() reanuda el micrófono cuando termina de hablar
   } catch (err) {
     removeTyping();
-    appendMessage("AI", "⚠️ No pude conectar con el motor de IA (Ollama). Revisa la URL y el modelo en Settings, y que el servidor esté corriendo. Detalle: " + err.message);
-  } finally {
     waitingAI = false;
-    // reanudar escucha si seguimos en llamada
-    if (isCalling && !isMuted && micSupported()) { setTimeout(safeStart, 400); }
+    appendMessage("AI", "⚠️ No pude obtener respuesta del tutor: " + err.message);
+    // reanudar escucha tras el error
+    if (isCalling && !isMuted && micSupported()) setTimeout(maybeStart, 400);
   }
 }
 
@@ -743,12 +787,25 @@ if (window.speechSynthesis) {
 }
 
 function speak(text, langOverride) {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis) {
+    if (isCalling && !isMuted) setTimeout(maybeStart, 200);
+    return;
+  }
   window.speechSynthesis.cancel();
+  // parar el micrófono mientras el tutor habla (evita que se escuche a sí mismo)
+  if (recognition && listening) { try { recognition.abort(); } catch (e) {} listening = false; }
+
   const u = new SpeechSynthesisUtterance(text);
   u.lang = langOverride || settings.ttsLang || "en-US";
   const v = voices.find(x => x.name === settings.voiceName);
   if (v) u.voice = v;
+  u.onstart = () => { speaking = true; };
+  const resume = () => {
+    speaking = false;
+    if (isCalling && !isMuted) setTimeout(maybeStart, 250);
+  };
+  u.onend = resume;
+  u.onerror = resume;
   window.speechSynthesis.speak(u);
 }
 
@@ -972,18 +1029,56 @@ function renderSettings() {
     b.classList.toggle("active", b.dataset.formality === settings.formality));
   document.getElementById("formalityDesc").textContent = FORMALITY_TEXT[settings.formality];
   document.getElementById("ollamaUrl").value = settings.ollamaUrl;
-  document.getElementById("ollamaModel").value = settings.ollamaModel;
+  populateModelSelect(settings.ollamaModel ? [settings.ollamaModel] : []);
+  loadOllamaModels();
   document.getElementById("ttsLangSelect").value = settings.ttsLang;
 }
+
+function populateModelSelect(names) {
+  const sel = document.getElementById("ollamaModel");
+  if (!sel) return;
+  sel.innerHTML = "";
+  if (!names.length) {
+    const o = document.createElement("option");
+    o.value = ""; o.textContent = "(sin modelos — prueba la conexión)";
+    sel.appendChild(o); return;
+  }
+  names.forEach(n => {
+    const o = document.createElement("option");
+    o.value = n; o.textContent = n;
+    if (n === settings.ollamaModel) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (!names.includes(settings.ollamaModel)) sel.value = names[0];
+}
+
+// Carga los modelos instalados desde Ollama y autoselecciona uno válido.
+async function loadOllamaModels() {
+  const url = (settings.ollamaUrl || "").replace(/\/$/, "") + "/api/tags";
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const names = (data.models || []).map(m => m.name);
+    if (names.length && !names.includes(settings.ollamaModel)) {
+      settings.ollamaModel = names[0]; persist();
+    }
+    populateModelSelect(names);
+    return names;
+  } catch (e) {
+    return null; // sin conexión: dejamos el modelo actual
+  }
+}
+
 function setFormality(f) {
   settings.formality = f; persist(); renderSettings();
   toast("Formalidad: " + f);
 }
 document.addEventListener("input", (e) => {
   if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
-  if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value.trim(); persist(); }
 });
 document.addEventListener("change", (e) => {
+  if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value; persist(); toast("Modelo: " + settings.ollamaModel); }
   if (e.target.id === "ttsLangSelect") { settings.ttsLang = e.target.value; persist(); if (recognition) recognition.lang = settings.ttsLang; }
   if (e.target.id === "voiceSelect") { settings.voiceName = e.target.value; persist(); }
 });
@@ -991,18 +1086,16 @@ document.addEventListener("change", (e) => {
 async function testConnection() {
   const note = document.getElementById("connNote");
   note.style.color = "var(--text-dim)"; note.textContent = "Probando…";
-  const url = (settings.ollamaUrl || "").replace(/\/$/, "") + "/api/tags";
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    const models = (data.models || []).map(m => m.name).join(", ");
-    note.style.color = "var(--green)";
-    note.textContent = "✓ Conectado. Modelos: " + (models || "ninguno instalado");
-  } catch (e) {
+  const names = await loadOllamaModels();
+  if (names === null) {
     note.style.color = "var(--red)";
-    note.textContent = "✗ No se pudo conectar. ¿Ollama está corriendo? (" + e.message + ")";
+    note.textContent = "✗ No se pudo conectar. ¿Ollama está corriendo en " + settings.ollamaUrl + " ?";
+    return;
   }
+  note.style.color = "var(--green)";
+  note.textContent = names.length
+    ? "✓ Conectado. Modelo activo: " + settings.ollamaModel + " · disponibles: " + names.join(", ")
+    : "✓ Conectado, pero no hay modelos instalados. Ejecuta: ollama pull llama3.2:3b";
 }
 
 function resetData() {
@@ -1020,6 +1113,7 @@ function init() {
   settings = Object.assign({}, DEFAULT_SETTINGS, settings);
   loadVoices();
   renderSettings();
+  loadOllamaModels(); // autoselecciona un modelo instalado para que la llamada no dé 404
   if (!micSupported()) {
     setMicText("Tu navegador no soporta voz (usa Chrome/Edge)");
   }
