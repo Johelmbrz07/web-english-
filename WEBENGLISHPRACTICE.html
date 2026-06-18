@@ -247,6 +247,29 @@
   /* ============ TOAST ============ */
   #toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%; }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #lessonBanner { background:rgba(255,200,97,.12); border:1px solid #4a3a18; color:var(--accent); border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:14px; font-weight:600; }
+
+  /* ============ GRAMMAR MODAL ============ */
+  .modal-overlay { position:fixed; inset:0; z-index:150; display:none; background:rgba(5,8,15,.72); backdrop-filter:blur(4px); padding:18px; }
+  .modal-overlay.show { display:flex; align-items:center; justify-content:center; }
+  .modal {
+    width:100%; max-width:680px; max-height:86vh; display:flex; flex-direction:column;
+    background:var(--bg-1); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:18px 20px 10px; }
+  .modal-head h2 { margin:0; font-size:20px; }
+  .modal-close { background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; }
+  .modal-close:hover { border-color:var(--red); color:var(--red); }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; padding:4px 20px 14px; }
+  .tab { background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim); border-radius:999px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:600; }
+  .tab.active { background:#fff; color:#0b0f1a; border-color:#fff; }
+  .grammar-list { overflow-y:auto; padding:6px 20px 22px; border-top:1px solid var(--border); }
+  .g-item { display:flex; align-items:center; gap:10px; padding:13px 4px; border-bottom:1px solid var(--border-soft); color:var(--green); cursor:pointer; font-size:15px; }
+  .g-item:hover { color:#7af0c0; }
+  .g-item:last-child { border-bottom:none; }
+  .g-item .g-check { flex:0 0 auto; width:18px; color:var(--green); opacity:0; }
+  .g-item.done .g-check { opacity:1; }
+  .g-item.done { color:var(--text-mute); }
 </style>
 </head>
 <body>
@@ -267,15 +290,17 @@
       <div class="lesson-head">
         <div class="lesson-num" id="lessonNum">AI</div>
         <div>
-          <div class="lesson-title">Free conversation</div>
+          <div class="lesson-title" id="lessonTitle">Free conversation</div>
           <div class="lesson-sub" id="lessonSub">Talk with your AI tutor. Type a topic or just start.</div>
         </div>
       </div>
       <input type="text" id="topicInput" class="topic-input" placeholder="Lesson topic (optional): travel, job interview, daily life..." />
       <button class="btn btn-primary" style="margin-top:14px" onclick="startCallSession()">&#9654; Start call</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="openGrammar()">📚 Grammar lessons</button>
     </div>
 
     <div class="chat-wrap" id="chatWrap" style="display:none">
+      <div id="lessonBanner" style="display:none"></div>
       <div class="chat" id="messageContainer">
         <div class="chat-empty" id="chatEmpty">Say something or type to start the conversation 👋</div>
       </div>
@@ -327,6 +352,7 @@
     <div class="setting"><h3 id="statWords">0</h3><p>Saved words</p></div>
     <div class="setting"><h3 id="statSessions">0</h3><p>Conversations started</p></div>
     <div class="setting"><h3 id="statMessages">0</h3><p>Messages sent to the tutor</p></div>
+    <div class="setting"><h3 id="statGrammar">0</h3><p>Grammar lessons completed</p></div>
   </section>
 
   <!-- ===== VIEW: SETTINGS ===== -->
@@ -446,6 +472,23 @@
 <div id="popover"><div class="popover-content" id="popoverContent"></div></div>
 <div id="toast"></div>
 
+<!-- ===== GRAMMAR MODAL ===== -->
+<div id="grammarModal" class="modal-overlay" onclick="if(event.target===this)closeGrammar()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Grammar lesson</h2>
+      <button class="modal-close" onclick="closeGrammar()">✕</button>
+    </div>
+    <div class="tabs" id="grammarTabs">
+      <button class="tab active" data-level="beginner" onclick="setGrammarTab('beginner')"></button>
+      <button class="tab" data-level="intermediate" onclick="setGrammarTab('intermediate')"></button>
+      <button class="tab" data-level="advanced" onclick="setGrammarTab('advanced')"></button>
+      <button class="tab" data-level="random" onclick="startRandomGrammar()">Random</button>
+    </div>
+    <div class="grammar-list" id="grammarList"></div>
+  </div>
+</div>
+
 <script>
 "use strict";
 
@@ -475,9 +518,252 @@ function targetLang() { return LANGUAGES.find(l => l.code === settings.practiceL
 function nativeLangName() { return (NATIVE_LANGS.find(l => l.code === settings.nativeLang) || NATIVE_LANGS[0]).name; }
 
 /* =========================================================
+   GRAMMAR LESSONS (Beginner 72 / Intermediate 101 / Advanced 58)
+========================================================= */
+const GRAMMAR = {
+  beginner: [
+    "'Do' vs 'Make' – What's the difference?",
+    "On time vs In time, At the end vs In the end",
+    "Review of all verb tenses A2",
+    "Present simple forms of 'to be' – am/is/are",
+    "Present simple – I do, I don't, Do I?",
+    "Present continuous – I'm doing, I'm not doing, Are you doing?",
+    "Present simple or present continuous?",
+    "Present simple vs present continuous",
+    "Have got",
+    "Present perfect – form and use",
+    "Present perfect or past simple?",
+    "Past continuous and past simple",
+    "Was/were – past simple of 'be'",
+    "Past simple – regular/irregular verbs",
+    "Past simple – negatives and questions",
+    "Past simple – Form and use",
+    "Past perfect",
+    "'Will' and 'shall' – Future",
+    "Be going to – plans and predictions",
+    "Will vs be going to – future",
+    "The imperative – Sit down! Don't talk!",
+    "Present continuous for future arrangements",
+    "Can, can't – ability, possibility, permission",
+    "Would you like…? I'd like…",
+    "Have to, don't have to, must, mustn't",
+    "Should, shouldn't",
+    "Might, might not – possibility",
+    "Used to, didn't use to – past habits and states",
+    "How to use the verb 'go' in English",
+    "The different uses of the verb 'get'",
+    "Verbs with two objects",
+    "Stative vs dynamic verbs (or non-action vs action verbs)",
+    "Phrasal verbs: transitive and intransitive, separable and inseparable",
+    "First conditional and future time clauses",
+    "Second conditional",
+    "Present and past simple passive: be + past participle",
+    "Reported speech – indirect speech",
+    "Verbs + to + infinitive and verbs + -ing",
+    "Expressing purpose with 'to' and 'for'",
+    "Infinitives and gerunds – verb patterns",
+    "Subject pronouns, object pronouns, possessive pronouns, possessive adjectives",
+    "A/an, plurals – singular and plural forms",
+    "A/an, the, no article – the use of articles in English",
+    "A, some, any – countable and uncountable nouns",
+    "Much, many, a lot of, a little, a few",
+    "This, that, these, those",
+    "Possessive adjectives and subject pronouns (I/my, you/your, etc.)",
+    "Object pronouns vs subject pronouns – me or I, she or her?",
+    "Whose, possessive 's – Whose is this? It's Mike's",
+    "Something, anything, nothing, etc.",
+    "Much, many, little, few, some, any – quantifiers",
+    "Too, too much, too many, enough",
+    "Defining relative clauses – who, which, that, where",
+    "There is, there are – there was, there were",
+    "There or it",
+    "So, neither – so am I, neither do I, etc.",
+    "Adjectives – old, interesting, expensive, etc.",
+    "Adverbs of manner (slowly) – or adjectives (slow)?",
+    "Comparative adjectives – older than, more important than, etc.",
+    "Superlative adjectives – the oldest, the most important, etc.",
+    "No longer, any longer, anymore",
+    "Prepositions of movement – along, across, over, etc.",
+    "Conjunctions: and, but, or, so, because",
+    "However, although, because, so, and time connectors",
+    "At, in, on – prepositions of time",
+    "At, in, on – prepositions of place",
+    "Next to, under, between, in front of, behind, over, etc.",
+    "Questions – word order and question words",
+    "Asking questions in English – Question forms",
+    "Subject questions, questions with preposition",
+    "Adverbs of frequency with present simple",
+    "Basic word order in English",
+  ],
+  intermediate: [
+    "Review of all verb tenses B1",
+    "Review of all verb tenses B1-B2",
+    "Present simple or present continuous",
+    "Past simple or present perfect?",
+    "Present perfect simple and present perfect continuous",
+    "Present perfect simple or continuous",
+    "Past simple, past continuous, past perfect",
+    "Narrative tenses – all past tenses",
+    "Narrative tenses, used to, would",
+    "Future forms – will, be going to, present continuous",
+    "Future continuous and future perfect",
+    "Future forms – expressing future time",
+    "Other ways to express future – be about to, be due to, etc.",
+    "Future in the past",
+    "So, such (a), so much, so many",
+    "Have to, must, should – obligation, prohibition, necessity, advice",
+    "Had better… it's time",
+    "Can, could, be able to – ability and possibility",
+    "Modal verbs of deduction – must, might, could, can't",
+    "Usually, used to, be used to, get used to",
+    "B1 Phrasal verbs 1 – Exercises and explanation",
+    "B1 Phrasal verbs 2 – Exercises and explanation",
+    "B1 Phrasal verbs 3 – Exercises and explanation",
+    "Past modal verbs of deduction",
+    "Likely, unlikely, bound, definitely, probably – probability",
+    "Used to, be used to, get used to",
+    "Would and used to – past habits and repeated actions",
+    "Verbs of the senses: look, sound, feel, etc.",
+    "Modal verbs – permission, obligation, prohibition, necessity",
+    "Speculation and deduction – modal verbs and expressions",
+    "Verbs of the senses",
+    "'Get' – different meanings",
+    "The passive with reporting verbs – It is said that …",
+    "First conditional, future time clauses",
+    "Zero and first conditional and future time clauses",
+    "Second conditional – unreal situations",
+    "First and second conditionals",
+    "Third conditional – past unreal situations",
+    "Second and third conditionals – unreal conditionals",
+    "Unless, even if, provided, as long as, etc. – other expressions in conditionals",
+    "All conditionals – mixed conditionals, alternatives to if, inversion",
+    "Adjectives without noun",
+    "Mixed conditionals – If I were you, I wouldn't have done it",
+    "Wishes and regrets – I wish / if only",
+    "Wish, rather, if only, it's time – unreal uses of past tenses",
+    "Passive verb forms",
+    "Active and passive voice",
+    "The passive voice – all tenses",
+    "Have something done",
+    "Distancing – expressions and passive of reporting verbs",
+    "Passive verbs with two objects",
+    "Gerund or infinitive – verb patterns",
+    "Possessive 's with time expressions – Two hours' walk",
+    "Indirect speech – reported speech",
+    "Gerund or infinitive – do, to do, doing",
+    "Would rather, would prefer – expressing preference",
+    "Reporting verbs – admit doing, refuse to do, etc.",
+    "Verb + object + infinitive/gerund – verb patterns",
+    "Gerunds and infinitives – complex forms",
+    "Adjective order",
+    "A(n), the, no article",
+    "Much, many, a lot, little, few, some, any, no – quantifiers",
+    "All, both – quantifiers",
+    "Both, either, neither – quantifiers",
+    "Reflexive pronouns – myself, yourself",
+    "Any, no, none – quantifiers",
+    "Another, other, others, the other, the others",
+    "Quantifiers – all, most, both, either, neither, any, no, none",
+    "Reflexive and reciprocal pronouns",
+    "Generic pronouns – common-gender pronouns",
+    "Compound nouns and possessive forms",
+    "Defining and non-defining relative clauses",
+    "Whatever, whenever, wherever, whoever, however",
+    "Relative clauses – defining and non-defining",
+    "There and it – preparatory subjects",
+    "Question tags – aren't you? don't you?",
+    "Auxiliary verbs – different uses",
+    "Have – auxiliary or main verb",
+    "Ellipsis and substitution",
+    "Comparative and superlative adjectives and adverbs",
+    "Compound adjectives with numbers: 'a two-day trip'",
+    "The … the … comparatives",
+    "-Ed/-ing adjectives – adjectives from verbs",
+    "Participles as adjectives (-ed / -ing adjectives)",
+    "Clauses of contrast and purpose",
+    "So, such, such a, so much, so many",
+    "Already, still, yet – What's the difference?",
+    "Pretty, rather, quite, fairly",
+    "Inversion with negative adverbials – adding emphasis",
+    "Clauses of contrast, purpose and reason",
+    "Clauses of contrast, purpose, reason and result",
+    "Discourse markers – linking words",
+    "Participle clauses",
+    "Verb + preposition",
+    "Adjective + preposition",
+    "During, for, while",
+    "For, since, from – what's the difference?",
+    "Questions – different types",
+    "Indirect questions",
+    "Position of adverbs and adverb phrases",
+    "Cleft sentences – adding emphasis",
+  ],
+  advanced: [
+    "Future time expressions in subordinate clauses",
+    "Advanced aspects of the present perfect",
+    "Subtle distinctions between present tenses",
+    "State verbs in continuous forms",
+    "Advanced narrative techniques",
+    "Mixed time frames in storytelling",
+    "Literary uses of past tenses",
+    "Complex future time references",
+    "Future perfect continuous",
+    "Subtle distinctions in future forms",
+    "Advanced modal perfect forms",
+    "Hedging with modal verbs",
+    "Complex phrasal verb patterns",
+    "Formal alternatives to modal verbs",
+    "Idiomatic and figurative uses of phrasal verbs",
+    "Mixed and complex conditionals",
+    "Alternatives to if in conditional sentences",
+    "Subjunctive mood in formal English",
+    "Advanced expressions of hypothesis and speculation",
+    "Complex passive constructions",
+    "Passive infinitives and gerunds",
+    "Advanced causative forms",
+    "Passive with modal perfects",
+    "Advanced reporting structures",
+    "Reporting with complex tense shifts",
+    "Reporting with modals and conditionals",
+    "Complex verb patterns",
+    "Sentential relative clauses",
+    "Advanced gerund and infinitive constructions",
+    "Perfect and passive forms of gerunds and infinitives",
+    "Article usage in academic writing",
+    "Complex noun phrases",
+    "Advanced determiners and quantifiers",
+    "Nominalization in formal writing",
+    "Multiple relative clauses",
+    "Complex relative constructions",
+    "Reduced relative clauses",
+    "Complex auxiliary patterns",
+    "Auxiliary emphasis and inversion",
+    "Marginal and semi-auxiliaries",
+    "Complex prepositional phrases",
+    "Complex gradability patterns",
+    "Adverbial phrases and clauses",
+    "Position of adverbials for emphasis",
+    "Advanced comparative constructions",
+    "Complex subordination patterns",
+    "Advanced discourse markers",
+    "Sophisticated linking expressions",
+    "Complex participial clauses",
+    "Prepositional patterns in formal writing",
+    "Dependent prepositions with complex patterns",
+    "Complex question forms",
+    "Rhetorical questions",
+    "Question patterns in formal contexts",
+    "Fronting and inversion",
+    "Information structure and emphasis",
+    "Complex cleft sentences",
+    "Advanced word order patterns",
+  ],
+};
+
+/* =========================================================
    STATE & PERSISTENCE
 ========================================================= */
-const LS = { flashcards:"ea_flashcards", settings:"ea_settings", stats:"ea_stats" };
+const LS = { flashcards:"ea_flashcards", settings:"ea_settings", stats:"ea_stats", grammar:"ea_grammar_done" };
 const DEFAULT_SETTINGS = {
   practiceLang: "en-US",
   nativeLang: "es",
@@ -494,13 +780,14 @@ const PREFERRED_MODEL = "llama3.2:3b";
 let settings  = loadJSON(LS.settings, DEFAULT_SETTINGS);
 let flashcards = loadJSON(LS.flashcards, []);
 let stats = loadJSON(LS.stats, { sessions:0, messages:0 });
+let grammarDone = loadJSON(LS.grammar, {});
 
 function loadJSON(key, fallback) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
   catch (e) { return fallback; }
 }
 function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-function persist() { saveJSON(LS.settings, settings); saveJSON(LS.flashcards, flashcards); saveJSON(LS.stats, stats); }
+function persist() { saveJSON(LS.settings, settings); saveJSON(LS.flashcards, flashcards); saveJSON(LS.stats, stats); saveJSON(LS.grammar, grammarDone); }
 
 const FORMALITY_TEXT = {
   slang:  "Casual and relaxed: uses idioms, slang and contractions, like a friend.",
@@ -536,6 +823,62 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+/* =========================================================
+   GRAMMAR MODAL
+========================================================= */
+let currentGrammarLevel = "beginner";
+let pendingGrammar = null;
+const LEVEL_LABEL = { beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced" };
+
+function openGrammar() {
+  document.getElementById("grammarModal").classList.add("show");
+  setGrammarTab(currentGrammarLevel);
+}
+function closeGrammar() { document.getElementById("grammarModal").classList.remove("show"); }
+
+function levelProgress(level) {
+  const list = GRAMMAR[level] || [];
+  const done = list.filter(t => grammarDone[t]).length;
+  return { done, total: list.length };
+}
+function updateGrammarTabs() {
+  document.querySelectorAll("#grammarTabs .tab").forEach(tab => {
+    const lvl = tab.dataset.level;
+    if (lvl === "random") return;
+    const p = levelProgress(lvl);
+    tab.textContent = `${LEVEL_LABEL[lvl]} (${p.done}/${p.total})`;
+    tab.classList.toggle("active", lvl === currentGrammarLevel);
+  });
+}
+function setGrammarTab(level) {
+  currentGrammarLevel = level;
+  updateGrammarTabs();
+  const wrap = document.getElementById("grammarList");
+  wrap.innerHTML = "";
+  (GRAMMAR[level] || []).forEach(topic => {
+    const div = document.createElement("div");
+    div.className = "g-item" + (grammarDone[topic] ? " done" : "");
+    div.innerHTML = `<span class="g-check">✓</span><span class="g-text"></span>`;
+    div.querySelector(".g-text").textContent = topic;
+    div.onclick = () => startGrammarLesson(topic);
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = 0;
+}
+function startGrammarLesson(topic) {
+  grammarDone[topic] = true; persist();
+  closeGrammar();
+  switchView("practice");
+  pendingGrammar = topic;
+  if (isCalling) endCallSession();
+  startCallSession();
+}
+function startRandomGrammar() {
+  const all = [].concat(GRAMMAR.beginner, GRAMMAR.intermediate, GRAMMAR.advanced);
+  const topic = all[Math.floor(Math.random() * all.length)];
+  startGrammarLesson(topic);
 }
 
 /* =========================================================
@@ -703,8 +1046,19 @@ async function startCallAsync() {
 
   const topic = document.getElementById("topicInput").value.trim();
   const tgt = targetLang().english;
-  if (topic) sendToAI(`Start a ${tgt} conversation lesson about: ${topic}.`, true, null);
-  else sendToAI(`Start a friendly ${tgt} conversation with a short greeting and one question.`, true, null);
+  const grammar = pendingGrammar; pendingGrammar = null;
+  const banner = document.getElementById("lessonBanner");
+  if (grammar) {
+    banner.style.display = "block"; banner.textContent = "📚 Grammar lesson: " + grammar;
+    document.getElementById("lessonTitle").textContent = "Free conversation";
+    sendToAI(`This is a ${tgt} grammar lesson about: "${grammar}". Briefly explain the key rule with one clear example, then ask me a question so I can practice it. Throughout the lesson, focus your corrections on this grammar point. Keep replies short.`, true, null);
+  } else if (topic) {
+    banner.style.display = "block"; banner.textContent = "💬 Topic: " + topic;
+    sendToAI(`Start a ${tgt} conversation lesson about: ${topic}.`, true, null);
+  } else {
+    banner.style.display = "none"; banner.textContent = "";
+    sendToAI(`Start a friendly ${tgt} conversation with a short greeting and one question.`, true, null);
+  }
 }
 
 function endCallSession() {
@@ -1176,6 +1530,8 @@ function renderStats() {
   document.getElementById("statWords").textContent = flashcards.length;
   document.getElementById("statSessions").textContent = stats.sessions;
   document.getElementById("statMessages").textContent = stats.messages;
+  const g = document.getElementById("statGrammar");
+  if (g) g.textContent = Object.keys(grammarDone).filter(k => grammarDone[k]).length;
 }
 
 /* =========================================================
