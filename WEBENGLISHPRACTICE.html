@@ -376,6 +376,20 @@
     </div>
 
     <div class="setting">
+      <h3>Microphone</h3>
+      <p>If recognition is inaccurate, choose a better microphone (ideally a headset) and keep noise cancellation on.</p>
+      <div class="field">
+        <label>Input device</label>
+        <select id="micDeviceSelect"><option value="">Default microphone</option></select>
+      </div>
+      <label class="switch-row" for="noiseCancelToggle">
+        <input type="checkbox" id="noiseCancelToggle" onchange="setNoiseCancel(this.checked)" />
+        <span><span class="sr-title">Noise cancellation</span><br>
+          <span class="hint">Removes background noise and echo from your speakers (so the tutor's voice isn't transcribed as your words).</span></span>
+      </label>
+    </div>
+
+    <div class="setting">
       <h3>AI engine (Ollama)</h3>
       <p>The app sends your messages to a local Ollama server. Set the URL and model.</p>
       <div class="field">
@@ -470,6 +484,8 @@ const DEFAULT_SETTINGS = {
   formality: "normal",
   patience: 5,
   manualMode: false,
+  noiseCancel: true,
+  micDeviceId: "",
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "llama3.2:3b",
   voiceName: "",
@@ -544,14 +560,46 @@ function micSupported() { return !!SpeechRec; }
 
 // Ask for mic permission ONCE and keep the stream open.
 // Keeping a live stream prevents the browser from re-prompting on every restart (the loop).
+function micConstraints() {
+  const audio = {
+    echoCancellation: settings.noiseCancel !== false, // quita el eco de los parlantes (voz del tutor)
+    noiseSuppression: settings.noiseCancel !== false, // reduce ruido de fondo
+    autoGainControl: settings.noiseCancel !== false,  // nivela el volumen
+  };
+  if (settings.micDeviceId) audio.deviceId = { exact: settings.micDeviceId };
+  return { audio };
+}
 async function ensureMicPermission() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
   if (micStream && micStream.active) return true;
-  try { micStream = await navigator.mediaDevices.getUserMedia({ audio:true }); return true; }
+  try { micStream = await navigator.mediaDevices.getUserMedia(micConstraints()); populateMicDevices(); return true; }
   catch (e) { micStream = null; return false; }
 }
 function releaseMic() {
   if (micStream) { try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {} micStream = null; }
+}
+// Re-acquire the stream with new constraints (e.g. after changing mic / noise cancellation).
+async function refreshMicStream() {
+  releaseMic();
+  if (isCalling && micSupported()) await ensureMicPermission();
+}
+async function populateMicDevices() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const mics = devs.filter(d => d.kind === "audioinput");
+    const sel = document.getElementById("micDeviceSelect");
+    if (!sel) return;
+    sel.innerHTML = "";
+    const def = document.createElement("option"); def.value = ""; def.textContent = "Default microphone"; sel.appendChild(def);
+    mics.forEach((m, i) => {
+      const o = document.createElement("option");
+      o.value = m.deviceId;
+      o.textContent = m.label || ("Microphone " + (i + 1));
+      if (m.deviceId === settings.micDeviceId) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch (e) {}
 }
 
 function buildRecognition() {
@@ -1178,6 +1226,8 @@ function renderSettings() {
   const mm = document.getElementById("manualModeToggle"); if (mm) mm.checked = !!settings.manualMode;
   const ps = document.getElementById("patienceSlider"); if (ps) ps.value = settings.patience;
   const pv = document.getElementById("patienceVal"); if (pv) pv.textContent = settings.patience;
+  const nc = document.getElementById("noiseCancelToggle"); if (nc) nc.checked = settings.noiseCancel !== false;
+  populateMicDevices();
   document.getElementById("ollamaUrl").value = settings.ollamaUrl;
   populateModelSelect(settings.ollamaModel ? [settings.ollamaModel] : []);
   loadOllamaModels();
@@ -1227,6 +1277,11 @@ function setPatience(v) {
   const lbl = document.getElementById("patienceVal");
   if (lbl) lbl.textContent = settings.patience;
 }
+function setNoiseCancel(v) {
+  settings.noiseCancel = !!v; persist();
+  refreshMicStream();
+  toast(settings.noiseCancel ? "Noise cancellation ON" : "Noise cancellation OFF");
+}
 
 document.addEventListener("input", (e) => {
   if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
@@ -1235,6 +1290,7 @@ document.addEventListener("change", (e) => {
   if (e.target.id === "langSelect" || e.target.id === "practiceLangSelect") setPracticeLang(e.target.value);
   if (e.target.id === "nativeLangSelect") { settings.nativeLang = e.target.value; persist(); toast("Explanations in " + nativeLangName()); }
   if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value; persist(); toast("Model: " + settings.ollamaModel); }
+  if (e.target.id === "micDeviceSelect") { settings.micDeviceId = e.target.value; persist(); refreshMicStream(); toast("Microphone updated"); }
   if (e.target.id === "voiceSelect") { settings.voiceName = e.target.value; persist(); }
 });
 
