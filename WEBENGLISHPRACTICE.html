@@ -904,6 +904,7 @@ let isMuted = false;
 let listening = false;   // recognition active right now
 let speaking = false;    // TTS speaking
 let waitingAI = false;   // waiting for AI reply
+let history = [];        // conversation memory (so the tutor follows the thread)
 let micStream = null;    // persistent MediaStream -> avoids re-asking permission
 let restartGuard = { count:0, last:0 };
 let speechBuffer = "";   // accumulates what you say before sending
@@ -1046,7 +1047,7 @@ async function startCallAsync() {
   }
 
   isCalling = true; isMuted = false; waitingAI = false; restartGuard = { count:0, last:0 };
-  speechBuffer = ""; clearTimeout(silenceTimer);
+  speechBuffer = ""; clearTimeout(silenceTimer); history = [];
   stats.sessions++; persist();
   document.getElementById("lessonCard").style.display = "none";
   document.getElementById("chatWrap").style.display = "block";
@@ -1199,12 +1200,13 @@ function systemPrompt(isGreeting) {
     return `You are a friendly ${tgt} conversation tutor. ${FORMALITY_PROMPT[settings.formality] || ""} Respond ONLY with strict JSON, no markdown: {"score":null,"correction":"","note":"","reply":"<a short greeting in ${tgt} ending with one question>"}`;
   }
   return `You are a friendly ${tgt} conversation tutor for a student practicing ${tgt}. ${FORMALITY_PROMPT[settings.formality] || ""}
-Evaluate the student's last message, then continue the conversation.
+You are given the conversation so far. First understand and DIRECTLY respond to what the student actually said or asked in their last message, THEN ask one follow-up question to keep the conversation going. Stay on topic and keep the thread coherent. If the student's last message is unclear, confusing or seems mis-transcribed, politely ask them to repeat or rephrase instead of changing the subject or inventing an answer.
+Then evaluate ONLY the student's last message.
 Respond ONLY with strict JSON, no markdown, with this exact shape:
-{"score": <integer 0-10 rating the grammar and naturalness of the student's message>,
- "correction": "<a corrected, natural version of the student's message in ${tgt}; empty string if it was already correct>",
+{"score": <integer 0-10 rating the grammar and naturalness of the student's last message>,
+ "correction": "<a corrected, natural version of the student's last message in ${tgt}; empty string if it was already correct>",
  "note": "<a brief explanation in ${nat} of what to improve; empty string if perfect>",
- "reply": "<your conversational reply in ${tgt}, 1-2 sentences, ending with a question>"}`;
+ "reply": "<your reply in ${tgt}: answer what they said, then ask one question. 1-3 sentences>"}`;
 }
 
 async function sendToAI(userText, isGreeting, userBubble) {
@@ -1212,6 +1214,11 @@ async function sendToAI(userText, isGreeting, userBubble) {
   waitingAI = true;
   setMic(false, "Thinking…");
   showTyping();
+
+  // Construir los mensajes CON el historial para que el tutor tenga contexto.
+  if (!isGreeting) history.push({ role: "user", content: userText });
+  const convo = isGreeting ? [{ role: "user", content: userText }] : history.slice(-12);
+  const messages = [{ role: "system", content: systemPrompt(isGreeting) }, ...convo];
 
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
   try {
@@ -1223,11 +1230,8 @@ async function sendToAI(userText, isGreeting, userBubble) {
         stream: false,
         format: "json",
         keep_alive: "10m",
-        options: { num_predict: 200, temperature: 0.6 },
-        messages: [
-          { role:"system", content: systemPrompt(isGreeting) },
-          { role:"user", content: userText },
-        ],
+        options: { num_predict: 220, temperature: 0.6 },
+        messages,
       }),
     });
     if (!res.ok) {
@@ -1242,16 +1246,19 @@ async function sendToAI(userText, isGreeting, userBubble) {
     removeTyping();
     waitingAI = false;
 
+    let replyText = "";
     if (parsed && typeof parsed === "object" && parsed.reply) {
       const score = (typeof parsed.score === "number") ? Math.max(0, Math.min(10, Math.round(parsed.score))) : null;
       injectFeedback(userBubble, score, parsed.correction || "", parsed.note || "");
-      addAITurn(parsed.reply.trim());
-      speak(parsed.reply.trim());
+      replyText = String(parsed.reply).trim();
     } else {
-      const reply = (typeof raw === "string" ? raw : "").trim() || "(no reply)";
-      addAITurn(reply);
-      speak(reply);
+      replyText = (typeof raw === "string" ? raw : "").trim() || "(no reply)";
     }
+    addAITurn(replyText);
+    speak(replyText);
+    // guardar el turno del tutor en la memoria
+    history.push({ role: "assistant", content: replyText });
+    if (history.length > 16) history = history.slice(-16);
   } catch (err) {
     removeTyping();
     waitingAI = false;
