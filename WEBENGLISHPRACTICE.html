@@ -834,10 +834,10 @@ const DEFAULT_SETTINGS = {
   sttEngine: "browser",            // "browser" (Web Speech) o "whisper"
   whisperModel: "Xenova/whisper-base",
   ollamaUrl: "http://localhost:11434",
-  ollamaModel: "qwen2.5:3b",
+  ollamaModel: "qwen3:4b",
   voiceName: "",
 };
-const PREFERRED_MODEL = "qwen2.5:3b";
+const PREFERRED_MODEL = "qwen3:4b";
 let settings  = loadJSON(LS.settings, DEFAULT_SETTINGS);
 let flashcards = loadJSON(LS.flashcards, []);
 let stats = loadJSON(LS.stats, { sessions:0, messages:0 });
@@ -1423,25 +1423,36 @@ Respond ONLY with strict JSON, no markdown:
 {"score": <integer 0-10>, "correction": "<corrected version in ${tgt}, or empty string if already correct>", "note": "<the note in ${nat}>"}`;
 }
 
+// Modelos con "modo pensamiento" (qwen3, deepseek-r1, qwq...). Lo desactivamos para que sea rapido y limpio.
+function isThinkingModel() {
+  const m = (settings.ollamaModel || "").toLowerCase();
+  return m.includes("qwen3") || m.includes("deepseek-r1") || m.includes("qwq") || /[:\-]r1\b/.test(m) || m.includes("reasoning");
+}
+function stripThink(s) {
+  return String(s).replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<\/?think>/gi, "").trim();
+}
+
 // Single place to call Ollama's chat endpoint.
 async function ollamaChat(opts) {
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
   const body = {
-    model: settings.ollamaModel || "qwen2.5:3b",
+    model: settings.ollamaModel || "qwen3:4b",
     stream: false,
     keep_alive: "10m",
     options: { num_predict: opts.num_predict || 180, temperature: opts.temperature == null ? 0.6 : opts.temperature },
     messages: opts.messages,
   };
   if (opts.format) body.format = opts.format;
+  if (isThinkingModel()) body.think = false; // sin razonamiento -> rapido y sin <think>
   const res = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
   if (!res.ok) {
     if (res.status === 404) throw new Error(`model "${settings.ollamaModel}" not found in Ollama (404). Pick a model in Settings.`);
     throw new Error("HTTP " + res.status);
   }
   const data = await res.json();
-  return (data && data.message && data.message.content) ? data.message.content
-       : (data && data.response) ? data.response : "";
+  const content = (data && data.message && data.message.content) ? data.message.content
+                : (data && data.response) ? data.response : "";
+  return stripThink(content);
 }
 
 async function getReply(convo, isGreeting) {
@@ -1643,16 +1654,18 @@ CRITICAL LANGUAGE RULES — follow them exactly:
 Respond ONLY with valid JSON, no markdown, exactly this shape:
 {"translation":"<meaning in ${nat}>","pos":"<part of speech>","conjugations":[{"label":"present","value":"<${tgt}>"},{"label":"past","value":"<${tgt}>"},{"label":"past participle","value":"<${tgt}>"},{"label":"gerund","value":"<${tgt}>"}],"correctExample":"<correct sentence in ${tgt}>","commonError":"<common wrong sentence in ${tgt}>","otherMeanings":[{"pos":"<pos>","meaning":"<meaning in ${nat}>","example":"<example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<study tip in ${nat}>"}`;
   try {
+    const fcBody = { model: settings.ollamaModel || "qwen3:4b", stream:false, format:"json",
+      keep_alive:"10m", options:{ num_predict: 450, temperature: 0.25 },
+      messages:[{ role:"user", content:instruction }] };
+    if (isThinkingModel()) fcBody.think = false;
     const res = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ model: settings.ollamaModel || "qwen2.5:3b", stream:false, format:"json",
-        keep_alive:"10m", options:{ num_predict: 450, temperature: 0.25 },
-        messages:[{ role:"user", content:instruction }] }),
+      body: JSON.stringify(fcBody),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
-    const raw = (data.message && data.message.content) || data.response || "{}";
+    const raw = stripThink((data.message && data.message.content) || data.response || "{}");
     return normalizeCard(safeParse(raw) || {});
   } catch (e) {
     return normalizeCard({ translation:"(translation unavailable)", pos:"", frequency:3,
@@ -1966,7 +1979,7 @@ async function testConnection() {
   note.style.color = "var(--green)";
   note.textContent = names.length
     ? "✓ Connected. Active model: " + settings.ollamaModel + " · available: " + names.join(", ")
-    : "✓ Connected, but no models installed. Run: ollama pull qwen2.5:3b";
+    : "✓ Connected, but no models installed. Run: ollama pull qwen3:4b";
 }
 
 function resetData() {
@@ -1981,7 +1994,7 @@ function resetData() {
 ========================================================= */
 function init() {
   settings = Object.assign({}, DEFAULT_SETTINGS, settings);
-  if (settings.ollamaModel === "llama3" || settings.ollamaModel === "llama3.2:3b") settings.ollamaModel = PREFERRED_MODEL; // migra defaults viejos a qwen2.5:3b
+  if (["llama3", "llama3.2:3b", "qwen2.5:3b"].includes(settings.ollamaModel)) settings.ollamaModel = PREFERRED_MODEL; // migra defaults viejos a qwen3:4b
   persist();
   buildLangSelects();
   loadVoices();
