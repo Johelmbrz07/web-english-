@@ -1147,6 +1147,7 @@ function updateCallUI() { document.getElementById("navCall").classList.toggle("i
 ========================================================= */
 let whisperPipe = null;
 let whisperLoading = null;
+let whisperDevice = "CPU";
 let audioCtx = null, sourceNode = null, procNode = null;
 let vadBuffers = [], vadActive = false, vadLastVoice = 0, vadStart = 0, transcribing = false;
 const VAD_THRESHOLD = 0.012;  // umbral de voz vs silencio
@@ -1166,16 +1167,24 @@ async function loadWhisper() {
   whisperLoading = (async () => {
     const mod = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js");
     mod.env.allowLocalModels = false;
-    return mod.pipeline("automatic-speech-recognition", settings.whisperModel || "Xenova/whisper-base", {
-      dtype: "q8",
-      progress_callback: (p) => {
-        if (p && p.status === "progress" && p.progress != null) setMic(false, `Downloading Whisper… ${Math.round(p.progress)}%`);
-      },
-    });
+    const model = settings.whisperModel || "Xenova/whisper-base";
+    const progress_callback = (p) => {
+      if (p && p.status === "progress" && p.progress != null) setMic(false, `Downloading Whisper… ${Math.round(p.progress)}%`);
+    };
+    // Intenta WebGPU (mucho mas rapido, ideal para el modelo Small); si falla, usa CPU.
+    if (navigator.gpu) {
+      try {
+        const pipe = await mod.pipeline("automatic-speech-recognition", model, { device:"webgpu", dtype:"fp16", progress_callback });
+        whisperDevice = "GPU";
+        return pipe;
+      } catch (e) { /* sin WebGPU disponible -> CPU */ }
+    }
+    whisperDevice = "CPU";
+    return mod.pipeline("automatic-speech-recognition", model, { dtype:"q8", progress_callback });
   })();
   try {
     whisperPipe = await whisperLoading;
-    setMic(true, "Whisper ready · Listening...");
+    setMic(true, `Whisper ready (${whisperDevice}) · Listening...`);
   } catch (e) {
     whisperPipe = null;
     toast("Couldn't load Whisper: " + e.message);
@@ -1852,9 +1861,13 @@ function setWhisperModel(v) {
 function updateWhisperNote() {
   const n = document.getElementById("whisperNote");
   if (!n) return;
-  n.textContent = settings.sttEngine === "whisper"
-    ? "Whisper transcribes on your device (private, offline after the first download). More accurate with accents. The first call downloads the model once."
-    : "The browser engine is instant but can confuse similar-sounding words.";
+  if (settings.sttEngine === "whisper") {
+    const gpu = navigator.gpu ? "Your browser supports WebGPU, so Whisper runs on your GPU (fast) — the Small model is recommended for best accuracy."
+                              : "Your browser has no WebGPU, so Whisper runs on CPU — use Tiny or Base to keep it fast.";
+    n.textContent = "Whisper transcribes on your device (private, offline after the first download). " + gpu;
+  } else {
+    n.textContent = "The browser engine is instant but can confuse similar-sounding words.";
+  }
 }
 
 document.addEventListener("input", (e) => {
