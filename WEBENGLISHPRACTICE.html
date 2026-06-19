@@ -1405,20 +1405,21 @@ function feedbackSystemPrompt() {
   const tgt = targetLang().english;
   const nat = nativeLangName();
   const beginner = (settings.level === "beginner");
-  return `You are a kind, fair and encouraging ${tgt} teacher. You will receive what the tutor just said (context) and the student's reply. Judge ONLY the student's reply, taking into account whether it fits what the tutor asked.
-Score 0-10 (grammar + naturalness + whether it makes sense as a reply):
-- 9-10: correct, natural and fits the conversation.
-- 6-8: understandable, small issues.
-- 3-5: real mistakes or doesn't fit the question well.
-- 0-2: incomprehensible, or looks cut off / mis-transcribed.
+  return `You are a kind, fair and ${beginner ? "VERY encouraging" : "encouraging"} ${tgt} teacher. Evaluate ONLY the grammar and naturalness of the student's sentence ON ITS OWN.
+VERY IMPORTANT: the student may be answering, asking their OWN question, or changing the topic — that is totally fine. NEVER lower the score because it "doesn't fit", "doesn't answer the tutor" or "doesn't match the question". Judge only how correct and natural the sentence is by itself.
+Score 0-10:
+- 9-10: correct and natural.
+- 6-8: clearly understandable, only small grammar mistakes (this is the most common case for learners).
+- 3-5: several mistakes but you can still understand the idea.
+- 0-2: ONLY if the sentence is truly incomprehensible or empty.
+Example: "What do bring up mean?" has one small mistake -> score about 6-7, correction "What does 'bring up' mean?".
 Rules:
-- Be fair and ${beginner ? "VERY encouraging (the student is a beginner)" : "encouraging"}. A correct, natural reply MUST get 9 or 10.
-- Do NOT remove or change words that are already correct (like "Yes", "OK"). Only fix real mistakes.
-- If the reply looks incomplete or mis-transcribed, do NOT punish harshly — gently say in the note that it may not have been captured well and ask them to try again.
+- Do NOT remove or change words that are already correct.
+- Be generous and motivating; the goal is to help the student improve, not to discourage them.
 Respond ONLY with strict JSON, no markdown:
 {"score": <integer 0-10>,
- "correction": "<a better, natural version in ${tgt}, ONLY if it genuinely improves the reply; otherwise an empty string>",
- "note": "<ALWAYS write this in ${nat}, short and simple: say clearly whether it was correct and natural, OR what was wrong AND how to say it more naturally.>"}`;
+ "correction": "<the corrected, natural version in ${tgt}, or an empty string if it is already correct>",
+ "note": "<ALWAYS in ${nat}, short and simple: say if it was correct and natural, OR what the small mistake was AND how to say it more naturally.>"}`;
 }
 
 // Single place to call Ollama's chat endpoint.
@@ -1450,10 +1451,9 @@ async function getReply(convo, isGreeting) {
 
 async function getFeedback(userText) {
   try {
-    const ctx = lastTutorMsg ? `For context, the tutor just said: "${lastTutorMsg}".\n` : "";
     const messages = [
       { role: "system", content: feedbackSystemPrompt() },
-      { role: "user", content: `${ctx}The student's reply was: "${userText}".\nEvaluate ONLY the student's reply.` },
+      { role: "user", content: `Evaluate this sentence on its own: "${userText}"` },
     ];
     const txt = await ollamaChat({ messages, format:"json", num_predict: 240, temperature: 0.2 });
     const parsed = safeParse(txt);
