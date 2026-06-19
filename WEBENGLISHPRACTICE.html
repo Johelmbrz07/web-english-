@@ -1398,20 +1398,24 @@ async function generateFlashcard(word) {
   const tgt = targetLang().english;
   const nat = nativeLangName();
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
-  const instruction = `You create a study flashcard for the ${tgt} word "${word}". The learner's native language is ${nat}.
-Strict language rules:
-- "translation", "note" and "tip" must be written in ${nat}.
-- "pos", "conjugations" values, "correctExample" and "commonError" must be written in ${tgt} (the language of the word).
-- Only include conjugations if "${word}" is a VERB in ${tgt}; if it is NOT a verb (noun, adjective, adverb, etc.) return an empty array [].
+  const instruction = `You are a ${tgt} language teacher creating a study flashcard for the ${tgt} word "${word}". The learner's native language is ${nat}.
+
+CRITICAL LANGUAGE RULES — follow them exactly:
+- The word "${word}" is written in ${tgt}.
+- "translation": ONLY the meaning of the word translated into ${nat} (a single word or short phrase). Do NOT repeat the original word, do NOT add "=" or "es" or extra text.
+- "conjugations", "correctExample" and "commonError" MUST be written in ${tgt}. They must NOT be in English (unless ${tgt} is English) and must NOT be in ${nat}.
+- If "${word}" is a verb OR any verb form (gerund/-ing, participle, or a conjugated form), identify its base/infinitive form and give that verb's main conjugations in ${tgt} (present, past, past participle, gerund). If it is NOT a verb, return an empty array [].
 - "otherMeanings": the "meaning" field in ${nat}, the "example" field in ${tgt}.
+- "tip": one short study tip in ${nat}.
+
 Respond ONLY with valid JSON, no markdown, exactly this shape:
-{"translation":"<${nat} translation of the word>","pos":"<part of speech in ${tgt}>","conjugations":[{"label":"present","value":"<${tgt} form>"},{"label":"past","value":"<${tgt} form>"},{"label":"past participle","value":"<${tgt} form>"},{"label":"gerund","value":"<${tgt} form>"}],"correctExample":"<a correct sentence in ${tgt} using the word>","commonError":"<a common incorrect sentence in ${tgt} that learners make>","otherMeanings":[{"pos":"<pos>","meaning":"<other meaning in ${nat}>","example":"<short example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<one helpful study tip in ${nat}>"}`;
+{"translation":"<meaning in ${nat}>","pos":"<part of speech>","conjugations":[{"label":"present","value":"<${tgt}>"},{"label":"past","value":"<${tgt}>"},{"label":"past participle","value":"<${tgt}>"},{"label":"gerund","value":"<${tgt}>"}],"correctExample":"<correct sentence in ${tgt}>","commonError":"<common wrong sentence in ${tgt}>","otherMeanings":[{"pos":"<pos>","meaning":"<meaning in ${nat}>","example":"<example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<study tip in ${nat}>"}`;
   try {
     const res = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ model: settings.ollamaModel || "llama3.2:3b", stream:false, format:"json",
-        keep_alive:"10m", options:{ num_predict: 400, temperature: 0.5 },
+        keep_alive:"10m", options:{ num_predict: 450, temperature: 0.25 },
         messages:[{ role:"user", content:instruction }] }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
