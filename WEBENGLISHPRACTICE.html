@@ -1355,8 +1355,10 @@ function replySystemPrompt(isGreeting) {
     return `You are Violet, a friendly ${tgt} conversation tutor. ${FORMALITY_PROMPT[settings.formality] || ""} Greet the student warmly in ${tgt} (1-2 sentences) and ask one simple opening question. Reply in plain text, only in ${tgt}.`;
   }
   return `You are Violet, a friendly ${tgt} conversation tutor for a ${nat}-speaking student. ${FORMALITY_PROMPT[settings.formality] || ""}
-You are having a spoken conversation. Read the WHOLE conversation, then ALWAYS respond directly and specifically to what the student just said.
-- If the student asks a question (for example what a word or phrase means), answer it clearly and simply FIRST.
+You are having a spoken conversation. Read the conversation, then respond directly and specifically to the student's LATEST message.
+- Focus on what the student just said. If they refer to "the phrase", "it" or "that", they mean the phrase they just quoted or the one YOU used most recently — never invent or bring up a different phrase, name or topic from earlier or out of nowhere.
+- Only talk about what the student actually mentioned. Do NOT make up phrases or topics they did not say.
+- If the student asks what a word or phrase means, answer it clearly and simply FIRST, using the exact phrase in question.
 - If their message is unclear or looks mis-transcribed, ask them to repeat — do NOT change the subject or invent an answer.
 - Never ignore their question. Never repeat a question you already asked.
 After responding, ask ONE relevant follow-up question.
@@ -1392,7 +1394,7 @@ async function ollamaChat(opts) {
 
 async function getReply(convo, isGreeting) {
   const messages = [{ role:"system", content: replySystemPrompt(isGreeting) }, ...convo];
-  const txt = await ollamaChat({ messages, num_predict: 170, temperature: 0.7 });
+  const txt = await ollamaChat({ messages, num_predict: 170, temperature: 0.5 });
   return String(txt).trim();
 }
 
