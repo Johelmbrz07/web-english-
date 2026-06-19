@@ -1435,15 +1435,20 @@ function stripThink(s) {
 // Single place to call Ollama's chat endpoint.
 async function ollamaChat(opts) {
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  let messages = opts.messages;
   const body = {
     model: settings.ollamaModel || "qwen3:4b",
     stream: false,
     keep_alive: "10m",
     options: { num_predict: opts.num_predict || 180, temperature: opts.temperature == null ? 0.6 : opts.temperature },
-    messages: opts.messages,
   };
   if (opts.format) body.format = opts.format;
-  if (isThinkingModel()) body.think = false; // sin razonamiento -> rapido y sin <think>
+  if (isThinkingModel()) {
+    body.think = false; // por si la version de Ollama lo soporta
+    // ademas, el switch /no_think que qwen3 reconoce siempre (en el ultimo mensaje)
+    messages = messages.map((m, i, arr) => i === arr.length - 1 ? { ...m, content: m.content + " /no_think" } : m);
+  }
+  body.messages = messages;
   const res = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
   if (!res.ok) {
     if (res.status === 404) throw new Error(`model "${settings.ollamaModel}" not found in Ollama (404). Pick a model in Settings.`);
@@ -1654,9 +1659,10 @@ CRITICAL LANGUAGE RULES — follow them exactly:
 Respond ONLY with valid JSON, no markdown, exactly this shape:
 {"translation":"<meaning in ${nat}>","pos":"<part of speech>","conjugations":[{"label":"present","value":"<${tgt}>"},{"label":"past","value":"<${tgt}>"},{"label":"past participle","value":"<${tgt}>"},{"label":"gerund","value":"<${tgt}>"}],"correctExample":"<correct sentence in ${tgt}>","commonError":"<common wrong sentence in ${tgt}>","otherMeanings":[{"pos":"<pos>","meaning":"<meaning in ${nat}>","example":"<example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<study tip in ${nat}>"}`;
   try {
+    const fcInstruction = isThinkingModel() ? instruction + " /no_think" : instruction;
     const fcBody = { model: settings.ollamaModel || "qwen3:4b", stream:false, format:"json",
       keep_alive:"10m", options:{ num_predict: 450, temperature: 0.25 },
-      messages:[{ role:"user", content:instruction }] };
+      messages:[{ role:"user", content:fcInstruction }] };
     if (isThinkingModel()) fcBody.think = false;
     const res = await fetch(url, {
       method:"POST",
