@@ -424,6 +424,22 @@
       <h3>Microphone</h3>
       <p>If recognition is inaccurate, choose a better microphone (ideally a headset) and keep noise cancellation on.</p>
       <div class="field">
+        <label>Speech recognition engine</label>
+        <select id="sttEngineSelect" onchange="setSttEngine(this.value)">
+          <option value="browser">Browser — fast, less accurate</option>
+          <option value="whisper">Whisper AI — accurate, runs locally</option>
+        </select>
+      </div>
+      <div class="field" id="whisperModelField" style="display:none">
+        <label>Whisper model</label>
+        <select id="whisperModelSelect" onchange="setWhisperModel(this.value)">
+          <option value="Xenova/whisper-tiny">Tiny — fastest, lower accuracy (~40 MB)</option>
+          <option value="Xenova/whisper-base">Base — recommended balance (~80 MB)</option>
+          <option value="Xenova/whisper-small">Small — most accurate, slower (~250 MB)</option>
+        </select>
+      </div>
+      <div class="seg-desc" id="whisperNote"></div>
+      <div class="field">
         <label>Input device</label>
         <select id="micDeviceSelect"><option value="">Default microphone</option></select>
       </div>
@@ -791,6 +807,8 @@ const DEFAULT_SETTINGS = {
   manualMode: false,
   noiseCancel: true,
   micDeviceId: "",
+  sttEngine: "browser",            // "browser" (Web Speech) o "whisper"
+  whisperModel: "Xenova/whisper-base",
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "qwen2.5:3b",
   voiceName: "",
@@ -1061,8 +1079,14 @@ async function startCallAsync() {
   document.getElementById("muteBtn").textContent = "🎤 Pause mic";
   updateCallUI();
 
-  if (micSupported() && micOk) { recognition = buildRecognition(); maybeStart(); }
-  else setMic(false, "Text only mode");
+  if (settings.sttEngine === "whisper") {
+    if (micOk) startWhisperListening();
+    else setMic(false, "Text only mode");
+  } else if (micSupported() && micOk) {
+    recognition = buildRecognition(); maybeStart();
+  } else {
+    setMic(false, "Text only mode");
+  }
 
   const topic = document.getElementById("topicInput").value.trim();
   const tgt = targetLang().english;
@@ -1085,6 +1109,7 @@ function endCallSession() {
   isCalling = false; isMuted = false; listening = false; waitingAI = false; speaking = false;
   speechBuffer = ""; clearTimeout(silenceTimer);
   if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
+  stopWhisperListening();
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   releaseMic();
   setMic(false, "Call ended");
@@ -1116,6 +1141,121 @@ function setMic(live, text) {
   if (text !== "") document.getElementById("micText").textContent = text;
 }
 function updateCallUI() { document.getElementById("navCall").classList.toggle("in-call", isCalling); }
+
+/* =========================================================
+   WHISPER (reconocimiento de voz en el navegador, mas preciso)
+========================================================= */
+let whisperPipe = null;
+let whisperLoading = null;
+let audioCtx = null, sourceNode = null, procNode = null;
+let vadBuffers = [], vadActive = false, vadLastVoice = 0, vadStart = 0, transcribing = false;
+const VAD_THRESHOLD = 0.012;  // umbral de voz vs silencio
+const VAD_MIN_MS = 350;       // ignora ruidos demasiado cortos
+const VAD_MAX_MS = 14000;     // corta enunciados larguisimos
+const WHISPER_JUNK = /^(you|thank you|thanks for watching|bye|\.|\s)*$/i;
+
+function whisperLangName() {
+  const p = (settings.practiceLang || "en").slice(0, 2);
+  return ({ en:"english", pt:"portuguese", es:"spanish", fr:"french", de:"german", it:"italian" })[p] || "english";
+}
+
+async function loadWhisper() {
+  if (whisperPipe) return whisperPipe;
+  if (whisperLoading) return whisperLoading;
+  setMic(false, "Loading Whisper (first time downloads the model)…");
+  whisperLoading = (async () => {
+    const mod = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js");
+    mod.env.allowLocalModels = false;
+    return mod.pipeline("automatic-speech-recognition", settings.whisperModel || "Xenova/whisper-base", {
+      dtype: "q8",
+      progress_callback: (p) => {
+        if (p && p.status === "progress" && p.progress != null) setMic(false, `Downloading Whisper… ${Math.round(p.progress)}%`);
+      },
+    });
+  })();
+  try {
+    whisperPipe = await whisperLoading;
+    setMic(true, "Whisper ready · Listening...");
+  } catch (e) {
+    whisperPipe = null;
+    toast("Couldn't load Whisper: " + e.message);
+    setMic(false, "Whisper failed — use text or Browser engine");
+  } finally {
+    whisperLoading = null;
+  }
+  return whisperPipe;
+}
+
+async function startWhisperListening() {
+  if (!micStream) { const ok = await ensureMicPermission(); if (!ok) { setMic(false, "Text only mode"); return; } }
+  await loadWhisper();
+  if (!whisperPipe || !isCalling) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    sourceNode = audioCtx.createMediaStreamSource(micStream);
+    procNode = audioCtx.createScriptProcessor(4096, 1, 1);
+    vadBuffers = []; vadActive = false; vadLastVoice = 0; vadStart = 0;
+    procNode.onaudioprocess = onWhisperAudio;
+    sourceNode.connect(procNode);
+    procNode.connect(audioCtx.destination);
+    setMic(true, "Listening...");
+  } catch (e) { toast("Audio capture error: " + e.message); }
+}
+
+function stopWhisperListening() {
+  try { if (procNode) { procNode.disconnect(); procNode.onaudioprocess = null; } } catch (e) {}
+  try { if (sourceNode) sourceNode.disconnect(); } catch (e) {}
+  try { if (audioCtx) audioCtx.close(); } catch (e) {}
+  procNode = null; sourceNode = null; audioCtx = null;
+  vadBuffers = []; vadActive = false; transcribing = false;
+}
+
+function onWhisperAudio(e) {
+  if (!isCalling || isMuted || speaking || waitingAI || transcribing) return; // solo cuando es tu turno
+  const input = e.inputBuffer.getChannelData(0);
+  let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+  const rms = Math.sqrt(sum / input.length);
+  const now = performance.now();
+  if (rms > VAD_THRESHOLD) {
+    if (!vadActive) { vadActive = true; vadStart = now; setMic(true, "🎤 Listening..."); }
+    vadLastVoice = now;
+    vadBuffers.push(Float32Array.from(input));
+  } else if (vadActive) {
+    vadBuffers.push(Float32Array.from(input)); // captura el silencio final
+    if (now - vadLastVoice > patienceDelay() || now - vadStart > VAD_MAX_MS) finalizeUtterance();
+  }
+}
+
+async function finalizeUtterance() {
+  const buffers = vadBuffers; vadBuffers = []; vadActive = false;
+  const speechMs = (buffers.length * 4096 / 16000) * 1000;
+  if (speechMs < VAD_MIN_MS) { setMic(true, "Listening..."); return; }
+  let len = 0; buffers.forEach(b => len += b.length);
+  const audio = new Float32Array(len); let off = 0;
+  buffers.forEach(b => { audio.set(b, off); off += b.length; });
+
+  transcribing = true; setMic(false, "Transcribing…");
+  try {
+    const out = await whisperPipe(audio, { language: whisperLangName(), task: "transcribe", chunk_length_s: 30 });
+    let text = ((out && out.text) || "").trim().replace(/^\s*[\[(][^\])]*[\])]\s*/g, "");
+    transcribing = false;
+    if (text && !WHISPER_JUNK.test(text)) {
+      if (settings.manualMode) {
+        const cur = document.getElementById("manualInput").value.trim();
+        document.getElementById("manualInput").value = (cur ? cur + " " : "") + text;
+        setMic(true, "🎤 Review and Send");
+      } else {
+        handleUserUtterance(text);
+      }
+    } else {
+      setMic(true, "Listening...");
+    }
+  } catch (e) {
+    transcribing = false;
+    setMic(true, "Listening...");
+  }
+}
 
 /* =========================================================
    CHAT + AI
@@ -1638,6 +1778,10 @@ function renderSettings() {
   const ps = document.getElementById("patienceSlider"); if (ps) ps.value = settings.patience;
   const pv = document.getElementById("patienceVal"); if (pv) pv.textContent = settings.patience;
   const nc = document.getElementById("noiseCancelToggle"); if (nc) nc.checked = settings.noiseCancel !== false;
+  const se = document.getElementById("sttEngineSelect"); if (se) se.value = settings.sttEngine || "browser";
+  const wm = document.getElementById("whisperModelSelect"); if (wm) wm.value = settings.whisperModel || "Xenova/whisper-base";
+  const wf = document.getElementById("whisperModelField"); if (wf) wf.style.display = (settings.sttEngine === "whisper") ? "block" : "none";
+  updateWhisperNote();
   populateMicDevices();
   document.getElementById("ollamaUrl").value = settings.ollamaUrl;
   populateModelSelect(settings.ollamaModel ? [settings.ollamaModel] : []);
@@ -1692,6 +1836,25 @@ function setNoiseCancel(v) {
   settings.noiseCancel = !!v; persist();
   refreshMicStream();
   toast(settings.noiseCancel ? "Noise cancellation ON" : "Noise cancellation OFF");
+}
+function setSttEngine(v) {
+  settings.sttEngine = v; persist();
+  document.getElementById("whisperModelField").style.display = (v === "whisper") ? "block" : "none";
+  updateWhisperNote();
+  toast(v === "whisper" ? "Whisper engine (applies next call)" : "Browser engine (applies next call)");
+}
+function setWhisperModel(v) {
+  settings.whisperModel = v; persist();
+  whisperPipe = null; // forzar recarga del nuevo modelo en la proxima llamada
+  updateWhisperNote();
+  toast("Whisper model: " + v.split("/").pop());
+}
+function updateWhisperNote() {
+  const n = document.getElementById("whisperNote");
+  if (!n) return;
+  n.textContent = settings.sttEngine === "whisper"
+    ? "Whisper transcribes on your device (private, offline after the first download). More accurate with accents. The first call downloads the model once."
+    : "The browser engine is instant but can confuse similar-sounding words.";
 }
 
 document.addEventListener("input", (e) => {
