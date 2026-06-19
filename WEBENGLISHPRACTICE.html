@@ -410,6 +410,28 @@
     </div>
 
     <div class="setting">
+      <h3>Your level &amp; help</h3>
+      <p>The app adapts to you. As a beginner the tutor uses simple words and explains in your language so you can understand.</p>
+      <div class="field">
+        <label>Proficiency level</label>
+        <select id="levelSelect" onchange="setLevel(this.value)">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tutor language usage</label>
+        <select id="langUsageSelect" onchange="setLangUsage(this.value)">
+          <option value="native">Explain in my language (most help)</option>
+          <option value="mixed">Mixed language (recommended)</option>
+          <option value="target">Target language only (immersion)</option>
+        </select>
+      </div>
+      <div class="seg-desc" id="levelNote"></div>
+    </div>
+
+    <div class="setting">
       <h3>Tutor formality</h3>
       <p>The register the AI uses when talking to you.</p>
       <div class="seg-group">
@@ -803,6 +825,8 @@ const DEFAULT_SETTINGS = {
   practiceLang: "en-US",
   nativeLang: "es",
   formality: "normal",
+  level: "beginner",
+  langUsage: "mixed",
   patience: 5,
   manualMode: false,
   noiseCancel: true,
@@ -1351,18 +1375,30 @@ function sendManual() {
 function replySystemPrompt(isGreeting) {
   const tgt = targetLang().english;
   const nat = nativeLangName();
+  const level = ({
+    beginner: `The student is a BEGINNER who knows very little ${tgt}. Use very short, simple sentences and basic words. Be very patient, warm and encouraging.`,
+    intermediate: `The student is at an intermediate level. Use everyday vocabulary and normal-length sentences, and gently push them a little.`,
+    advanced: `The student is advanced. Use natural, rich ${tgt} including common idioms.`,
+  })[settings.level || "beginner"];
+  const usage = ({
+    target: `Reply only in ${tgt}.`,
+    mixed: `Reply mainly in ${tgt}, but add a short ${nat} translation in parentheses for any word or phrase a learner might not know. If the student seems lost, explain briefly in ${nat}.`,
+    native: `The student barely understands ${tgt}. Explain mostly in ${nat}; give the ${tgt} words/phrases to learn together with their ${nat} meaning, and keep any ${tgt} very simple.`,
+  })[settings.langUsage || "mixed"];
+
   if (isGreeting) {
-    return `You are Violet, a friendly ${tgt} conversation tutor. ${FORMALITY_PROMPT[settings.formality] || ""} Greet the student warmly in ${tgt} (1-2 sentences) and ask one simple opening question. Reply in plain text, only in ${tgt}.`;
+    return `You are Violet, a warm, patient ${tgt} tutor. ${level} ${usage} ${FORMALITY_PROMPT[settings.formality] || ""} Greet the student in 1-2 sentences and ask one simple question.`;
   }
-  return `You are Violet, a friendly ${tgt} conversation tutor for a ${nat}-speaking student. ${FORMALITY_PROMPT[settings.formality] || ""}
-You are having a spoken conversation. Read the conversation, then respond directly and specifically to the student's LATEST message.
-- Focus on what the student just said. If they refer to "the phrase", "it" or "that", they mean the phrase they just quoted or the one YOU used most recently — never invent or bring up a different phrase, name or topic from earlier or out of nowhere.
-- Only talk about what the student actually mentioned. Do NOT make up phrases or topics they did not say.
-- If the student asks what a word or phrase means, answer it clearly and simply FIRST, using the exact phrase in question.
-- If their message is unclear or looks mis-transcribed, ask them to repeat — do NOT change the subject or invent an answer.
-- Never ignore their question. Never repeat a question you already asked.
-After responding, ask ONE relevant follow-up question.
-Keep it short (1-3 sentences), write ONLY in ${tgt}, plain text, no labels, no JSON.`;
+  return `You are Violet, a warm, patient ${tgt} tutor for a ${nat}-speaking student who is LEARNING ${tgt}. ${level} ${usage} ${FORMALITY_PROMPT[settings.formality] || ""}
+The student is still learning, so their messages may have mistakes, be incomplete, or even be written in ${nat}. ALWAYS do your best to understand them and help — never require perfect ${tgt} and never criticize.
+Respond directly and specifically to the student's LATEST message:
+- If they ask what a word or phrase means, explain it clearly (in ${nat} when it helps) using the exact phrase they asked about.
+- Focus on what they just said. If they say "the phrase", "it" or "that", it means the phrase they just quoted or the one YOU used most recently — never invent a different phrase or topic.
+- If a message is unclear or looks mis-transcribed, gently ask them to repeat — do NOT change the subject or invent an answer.
+- Never repeat a question you already asked.
+After helping, ask ONE simple follow-up question.
+Keep it short (1-3 sentences), plain text, no JSON.`;
+}
 }
 
 function feedbackSystemPrompt() {
@@ -1785,6 +1821,9 @@ function renderSettings() {
   document.querySelectorAll(".seg-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.formality === settings.formality));
   document.getElementById("formalityDesc").textContent = FORMALITY_TEXT[settings.formality];
+  const lv = document.getElementById("levelSelect"); if (lv) lv.value = settings.level || "beginner";
+  const lu = document.getElementById("langUsageSelect"); if (lu) lu.value = settings.langUsage || "mixed";
+  updateLevelNote();
   const mm = document.getElementById("manualModeToggle"); if (mm) mm.checked = !!settings.manualMode;
   const ps = document.getElementById("patienceSlider"); if (ps) ps.value = settings.patience;
   const pv = document.getElementById("patienceVal"); if (pv) pv.textContent = settings.patience;
@@ -1833,6 +1872,18 @@ async function loadOllamaModels() {
 }
 
 function setFormality(f) { settings.formality = f; persist(); renderSettings(); toast("Formality: " + f); }
+function setLevel(v) { settings.level = v; persist(); updateLevelNote(); toast("Level: " + v); }
+function setLangUsage(v) { settings.langUsage = v; persist(); updateLevelNote(); toast("Tutor language: " + v); }
+function updateLevelNote() {
+  const n = document.getElementById("levelNote");
+  if (!n) return;
+  const u = ({
+    native: "The tutor will explain mostly in your language — best when you're starting out.",
+    mixed: "The tutor speaks the target language but adds translations in your language when needed.",
+    target: "The tutor speaks only the target language — full immersion.",
+  })[settings.langUsage || "mixed"];
+  n.textContent = u;
+}
 function setManualMode(v) {
   settings.manualMode = !!v; persist();
   if (settings.manualMode) { speechBuffer = ""; clearTimeout(silenceTimer); }
