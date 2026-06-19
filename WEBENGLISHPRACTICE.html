@@ -135,6 +135,16 @@
   .aiBubble .word { cursor:pointer; border-bottom:1px dashed transparent; }
   .aiBubble .word:hover { border-bottom-color: var(--accent); }
   .correction { margin-top:8px; padding:8px 10px; border-radius:10px; background: var(--green-soft); border-left:3px solid var(--green); font-size:13px; color:#bdf0db; }
+  /* feedback de gramática bajo la burbuja del usuario */
+  .feedback { margin-top:8px; padding:8px 11px; border-radius:10px; font-size:13px; line-height:1.45; }
+  .feedback.has-err { background: var(--red-soft); border-left:3px solid var(--red); color:#f6cdd4; }
+  .feedback.ok { background: var(--green-soft); border-left:3px solid var(--green); color:#bdf0db; }
+  .feedback .fb-score { font-weight:800; margin-right:6px; }
+  .feedback.has-err .fb-score { color: var(--red); }
+  .feedback.ok .fb-score { color: var(--green); }
+  .feedback .fb-corr { font-style:italic; }
+  .feedback .fb-exp { margin-top:5px; color:var(--text-dim); font-style:normal; }
+  .feedback.checking { color:var(--text-mute); font-style:italic; }
   .chat-empty { color:var(--text-mute); text-align:center; margin:auto; font-size:14px; }
 
   .mic-status {
@@ -534,7 +544,7 @@ function buildRecognition() {
   };
   r.onresult = (event) => {
     const text = event.results[event.results.length - 1][0].transcript.trim();
-    if (text) { appendMessage("User", text); sendToAI(text); }
+    if (text) { const b = appendMessage("User", text); checkGrammar(b, text); sendToAI(text); }
   };
   // Reinicio controlado: solo si seguimos en llamada y no estamos en mute / esperando IA
   r.onend = () => {
@@ -675,12 +685,13 @@ function sendManual() {
   const text = input.value.trim();
   if (!text) return;
   input.value = "";
-  appendMessage("User", text);
+  const b = appendMessage("User", text);
+  checkGrammar(b, text);
   sendToAI(text);
 }
 
 function systemPrompt() {
-  return `You are a friendly English tutor for a Spanish-speaking learner. ${FORMALITY_PROMPT[settings.formality] || ""} Keep replies short (1-3 sentences). If the user makes a grammar mistake, gently correct it. Always reply in English and end with a question to keep the conversation going.`;
+  return `You are a friendly English tutor for a Spanish-speaking learner. ${FORMALITY_PROMPT[settings.formality] || ""} Keep replies short (1-3 sentences). Do NOT correct grammar here; just keep the conversation natural. Always reply in English and end with a question to keep the conversation going.`;
 }
 
 async function sendToAI(userText, isSystemTrigger) {
@@ -718,6 +729,90 @@ async function sendToAI(userText, isSystemTrigger) {
     waitingAI = false;
     // reanudar escucha si seguimos en llamada
     if (isCalling && !isMuted && micSupported()) { setTimeout(safeStart, 400); }
+  }
+}
+
+/* =========================================================
+   CORRECCIÓN DE GRAMÁTICA (llamada dedicada y estricta)
+   Pensada para modelos pequeños como qwen2.5:3b:
+   - salida JSON forzada
+   - temperatura baja para reducir alucinaciones
+   - reglas claras: no inventar palabras, no juzgar puntuación
+========================================================= */
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+async function checkGrammar(bubbleDiv, text) {
+  if (!bubbleDiv || !text) return;
+  // placeholder mientras corrige
+  const box = document.createElement("div");
+  box.className = "feedback checking";
+  box.textContent = "Revisando…";
+  bubbleDiv.appendChild(box);
+  const container = document.getElementById("messageContainer");
+  container.scrollTop = container.scrollHeight;
+
+  const r = await getCorrection(text);
+  if (!r) { box.remove(); return; }
+
+  if (r.hasErrors) {
+    box.className = "feedback has-err";
+    box.innerHTML = `<span class="fb-score">${r.score}/10</span>` +
+      `<span class="fb-corr">"${escHtml(r.corrected)}"</span>` +
+      (r.explanation ? `<div class="fb-exp">${escHtml(r.explanation)}</div>` : "");
+  } else {
+    box.className = "feedback ok";
+    box.innerHTML = `<span class="fb-score">${r.score}/10</span>✓ ¡Bien dicho!`;
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+async function getCorrection(text) {
+  const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  const instruction =
+`You are a strict English grammar checker for a Spanish-speaking learner.
+The student wrote this exact sentence:
+"${text}"
+
+Rules:
+- Check ONLY grammar, spelling and word-order errors that REALLY appear in the sentence above.
+- NEVER invent, add or assume words that are not written.
+- Ignore capitalization and punctuation.
+- If the sentence is already correct, set hasErrors=false and repeat it unchanged.
+- "explanation" must be in Spanish, max 12 words, naming only the real change.
+
+Respond with ONLY this JSON, nothing else:
+{"hasErrors": true_or_false, "score": integer_1_to_10, "corrected": "the corrected sentence", "explanation": "short reason in Spanish or empty"}`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: settings.ollamaModel || "llama3",
+        stream: false,
+        format: "json",
+        options: { temperature: 0.1, top_p: 0.9 },
+        messages: [{ role: "user", content: instruction }],
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const raw = (data.message && data.message.content) || data.response || "{}";
+    const j = JSON.parse(extractJSON(raw));
+
+    const corrected = (j.corrected != null ? String(j.corrected) : text).trim();
+    // Seguridad anti-alucinación: si el modelo dice que hay error pero
+    // la frase corregida es idéntica (ignorando mayúsculas/espacios), lo tratamos como correcto.
+    const same = corrected.toLowerCase().replace(/\s+/g," ").trim() ===
+                 text.toLowerCase().replace(/\s+/g," ").trim();
+    let hasErrors = !!j.hasErrors && !same;
+    let score = Math.max(1, Math.min(10, parseInt(j.score) || (hasErrors ? 6 : 10)));
+    if (!hasErrors) score = Math.max(score, 9);
+
+    return { hasErrors, score, corrected, explanation: (j.explanation || "").toString().trim() };
+  } catch (e) {
+    return null; // si falla, simplemente no mostramos feedback
   }
 }
 
