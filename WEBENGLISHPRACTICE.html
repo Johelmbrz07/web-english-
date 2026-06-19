@@ -786,10 +786,10 @@ const DEFAULT_SETTINGS = {
   noiseCancel: true,
   micDeviceId: "",
   ollamaUrl: "http://localhost:11434",
-  ollamaModel: "llama3.2:3b",
+  ollamaModel: "qwen2.5:3b",
   voiceName: "",
 };
-const PREFERRED_MODEL = "llama3.2:3b";
+const PREFERRED_MODEL = "qwen2.5:3b";
 let settings  = loadJSON(LS.settings, DEFAULT_SETTINGS);
 let flashcards = loadJSON(LS.flashcards, []);
 let stats = loadJSON(LS.stats, { sessions:0, messages:0 });
@@ -1218,7 +1218,7 @@ function feedbackSystemPrompt() {
 async function ollamaChat(opts) {
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
   const body = {
-    model: settings.ollamaModel || "llama3.2:3b",
+    model: settings.ollamaModel || "qwen2.5:3b",
     stream: false,
     keep_alive: "10m",
     options: { num_predict: opts.num_predict || 180, temperature: opts.temperature == null ? 0.6 : opts.temperature },
@@ -1433,7 +1433,7 @@ Respond ONLY with valid JSON, no markdown, exactly this shape:
     const res = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ model: settings.ollamaModel || "llama3.2:3b", stream:false, format:"json",
+      body: JSON.stringify({ model: settings.ollamaModel || "qwen2.5:3b", stream:false, format:"json",
         keep_alive:"10m", options:{ num_predict: 450, temperature: 0.25 },
         messages:[{ role:"user", content:instruction }] }),
     });
@@ -1661,7 +1661,7 @@ async function loadOllamaModels() {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const names = (data.models || []).map(m => m.name);
-    // si el modelo guardado no existe, prefiere el rápido (llama3.2:3b); si no, el primero
+    // si el modelo guardado no existe, prefiere el recomendado (qwen2.5:3b); si no, el primero
     if (names.length && !names.includes(settings.ollamaModel)) {
       settings.ollamaModel = names.includes(PREFERRED_MODEL) ? PREFERRED_MODEL : names[0];
       persist();
@@ -1711,7 +1711,7 @@ async function testConnection() {
   note.style.color = "var(--green)";
   note.textContent = names.length
     ? "✓ Connected. Active model: " + settings.ollamaModel + " · available: " + names.join(", ")
-    : "✓ Connected, but no models installed. Run: ollama pull llama3.2:3b";
+    : "✓ Connected, but no models installed. Run: ollama pull qwen2.5:3b";
 }
 
 function resetData() {
@@ -1726,7 +1726,7 @@ function resetData() {
 ========================================================= */
 function init() {
   settings = Object.assign({}, DEFAULT_SETTINGS, settings);
-  if (settings.ollamaModel === "llama3") settings.ollamaModel = PREFERRED_MODEL; // migra el viejo default
+  if (settings.ollamaModel === "llama3" || settings.ollamaModel === "llama3.2:3b") settings.ollamaModel = PREFERRED_MODEL; // migra defaults viejos a qwen2.5:3b
   persist();
   buildLangSelects();
   loadVoices();
