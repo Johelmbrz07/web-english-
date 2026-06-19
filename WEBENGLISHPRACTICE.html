@@ -251,6 +251,9 @@
   #toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%; }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   #lessonBanner { background:rgba(255,69,58,.14); border:1px solid rgba(255,69,58,.32); color:var(--accent); border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:14px; font-weight:600; backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
+  .send-row { display:flex; gap:10px; margin-top:14px; align-items:stretch; }
+  .send-row .topic-input { flex:1; margin-top:0; }
+  .send-btn { width:auto; margin-top:0; padding:13px 20px; white-space:nowrap; }
 
   /* ============ GRAMMAR MODAL ============ */
   .modal-overlay { position:fixed; inset:0; z-index:150; display:none; background:rgba(5,8,15,.72); backdrop-filter:blur(4px); padding:18px; }
@@ -322,7 +325,10 @@
         <button class="btn btn-ghost" id="muteBtn" onclick="toggleMute()">🎤 Pause mic</button>
         <button class="btn btn-danger" onclick="endCallSession()">&#9632; End call</button>
       </div>
-      <input type="text" id="manualInput" class="topic-input" placeholder="...or type your message and press Enter" onkeydown="if(event.key==='Enter'){sendManual();}" />
+      <div class="send-row">
+        <input type="text" id="manualInput" class="topic-input" placeholder="...or type / correct your message, then Send" onkeydown="if(event.key==='Enter'){sendManual();}" />
+        <button class="btn btn-primary send-btn" onclick="sendManual()">Send</button>
+      </div>
     </div>
   </section>
 
