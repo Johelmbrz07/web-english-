@@ -1383,7 +1383,7 @@ function replySystemPrompt(isGreeting) {
   })[settings.level || "beginner"];
   const usage = ({
     target: `Reply only in ${tgt}.`,
-    mixed: `Reply mainly in ${tgt}, but add a short ${nat} translation in parentheses for any word or phrase a learner might not know. If the student seems lost, explain briefly in ${nat}.`,
+    mixed: `Reply in ${tgt}. Do NOT add translations in parentheses to your normal sentences. ONLY if the student asks what something means, or clearly seems confused, briefly explain that specific part in ${nat}.`,
     native: `The student barely understands ${tgt}. Explain mostly in ${nat}; give the ${tgt} words/phrases to learn together with their ${nat} meaning, and keep any ${tgt} very simple.`,
   })[settings.langUsage || "mixed"];
 
@@ -1405,21 +1405,22 @@ function feedbackSystemPrompt() {
   const tgt = targetLang().english;
   const nat = nativeLangName();
   const beginner = (settings.level === "beginner");
-  return `You are a kind, fair and ${beginner ? "VERY encouraging" : "encouraging"} ${tgt} teacher. Evaluate ONLY the grammar and naturalness of the student's sentence ON ITS OWN.
-VERY IMPORTANT: the student may be answering, asking their OWN question, or changing the topic — that is totally fine. NEVER lower the score because it "doesn't fit", "doesn't answer the tutor" or "doesn't match the question". Judge only how correct and natural the sentence is by itself.
+  return `You are a kind, fair and ${beginner ? "VERY encouraging" : "encouraging"} ${tgt} teacher giving feedback on ONE thing the student said in a spoken CONVERSATION. Conversational answers are often short fragments and that is perfectly natural and correct.
+Judge ONLY the grammar and naturalness of the student's sentence by itself. NEVER lower the score for being a question, a short answer, or for changing the topic.
+Natural conversational phrases are CORRECT and must score 9-10, for example: "I'm great, and you?", "And you?", "Me too", "Nice to meet you", "Not much". Do not demand longer or "more complete" sentences in a conversation.
 Score 0-10:
-- 9-10: correct and natural.
-- 6-8: clearly understandable, only small grammar mistakes (this is the most common case for learners).
-- 3-5: several mistakes but you can still understand the idea.
-- 0-2: ONLY if the sentence is truly incomprehensible or empty.
-Example: "What do bring up mean?" has one small mistake -> score about 6-7, correction "What does 'bring up' mean?".
-Rules:
-- Do NOT remove or change words that are already correct.
-- Be generous and motivating; the goal is to help the student improve, not to discourage them.
+- 9-10: correct and natural (this is the MOST COMMON case — use it whenever there is no real error).
+- 6-8: understood, with ONE small grammar mistake.
+- 3-5: several mistakes but still understandable.
+- 0-2: ONLY if the sentence is truly impossible to understand.
+Correction rules:
+- If the sentence is already correct or natural, "correction" MUST be an empty string. Do NOT rewrite it just to add a comma or make it longer.
+- Only provide a correction when there is a REAL mistake.
+Note (write it in ${nat}, short and simple):
+- If correct: say clearly it is correct and sounds natural.
+- If there is a mistake: name EXACTLY what to change in simple words (e.g. "Cambia 'do' por 'does'") so a beginner can see the difference, then show the natural version.
 Respond ONLY with strict JSON, no markdown:
-{"score": <integer 0-10>,
- "correction": "<the corrected, natural version in ${tgt}, or an empty string if it is already correct>",
- "note": "<ALWAYS in ${nat}, short and simple: say if it was correct and natural, OR what the small mistake was AND how to say it more naturally.>"}`;
+{"score": <integer 0-10>, "correction": "<corrected version in ${tgt}, or empty string if already correct>", "note": "<the note in ${nat}>"}`;
 }
 
 // Single place to call Ollama's chat endpoint.
