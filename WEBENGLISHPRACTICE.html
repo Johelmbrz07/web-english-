@@ -953,6 +953,7 @@ let listening = false;   // recognition active right now
 let speaking = false;    // TTS speaking
 let waitingAI = false;   // waiting for AI reply
 let history = [];        // conversation memory (so the tutor follows the thread)
+let lastTutorMsg = "";   // ultimo mensaje del tutor (contexto para evaluar tu respuesta)
 let micStream = null;    // persistent MediaStream -> avoids re-asking permission
 let restartGuard = { count:0, last:0 };
 let speechBuffer = "";   // accumulates what you say before sending
@@ -1095,7 +1096,7 @@ async function startCallAsync() {
   }
 
   isCalling = true; isMuted = false; waitingAI = false; restartGuard = { count:0, last:0 };
-  speechBuffer = ""; clearTimeout(silenceTimer); history = [];
+  speechBuffer = ""; clearTimeout(silenceTimer); history = []; lastTutorMsg = "";
   stats.sessions++; persist();
   document.getElementById("lessonCard").style.display = "none";
   document.getElementById("chatWrap").style.display = "block";
@@ -1403,20 +1404,21 @@ Keep it short (1-3 sentences), plain text, no JSON.`;
 function feedbackSystemPrompt() {
   const tgt = targetLang().english;
   const nat = nativeLangName();
-  return `You are a kind, fair and encouraging ${tgt} teacher giving feedback on ONE sentence a learner just said.
-Score it 0-10 based on grammar AND how natural it sounds:
-- 9-10: correct and natural (this is common — give it when deserved).
+  const beginner = (settings.level === "beginner");
+  return `You are a kind, fair and encouraging ${tgt} teacher. You will receive what the tutor just said (context) and the student's reply. Judge ONLY the student's reply, taking into account whether it fits what the tutor asked.
+Score 0-10 (grammar + naturalness + whether it makes sense as a reply):
+- 9-10: correct, natural and fits the conversation.
 - 6-8: understandable, small issues.
-- 3-5: noticeable mistakes.
-- 0-2: very hard to understand.
+- 3-5: real mistakes or doesn't fit the question well.
+- 0-2: incomprehensible, or looks cut off / mis-transcribed.
 Rules:
-- Be fair: a correct, natural sentence MUST get 9 or 10.
-- Do NOT remove or "correct" words that are already correct (for example do NOT delete valid words like "Yes", "Well", "OK"). Only fix real grammar mistakes or clearly unnatural wording.
-- Keep the learner's original meaning.
+- Be fair and ${beginner ? "VERY encouraging (the student is a beginner)" : "encouraging"}. A correct, natural reply MUST get 9 or 10.
+- Do NOT remove or change words that are already correct (like "Yes", "OK"). Only fix real mistakes.
+- If the reply looks incomplete or mis-transcribed, do NOT punish harshly — gently say in the note that it may not have been captured well and ask them to try again.
 Respond ONLY with strict JSON, no markdown:
 {"score": <integer 0-10>,
- "correction": "<a more natural or corrected version in ${tgt}, ONLY if it genuinely improves the sentence; otherwise an empty string>",
- "note": "<ALWAYS write this in ${nat}. If the sentence is good, say clearly that it is correct and sounds natural (and why). If not, explain in simple terms what was wrong and how to say it more naturally.>"}`;
+ "correction": "<a better, natural version in ${tgt}, ONLY if it genuinely improves the reply; otherwise an empty string>",
+ "note": "<ALWAYS write this in ${nat}, short and simple: say clearly whether it was correct and natural, OR what was wrong AND how to say it more naturally.>"}`;
 }
 
 // Single place to call Ollama's chat endpoint.
@@ -1448,7 +1450,11 @@ async function getReply(convo, isGreeting) {
 
 async function getFeedback(userText) {
   try {
-    const messages = [{ role:"system", content: feedbackSystemPrompt() }, { role:"user", content: userText }];
+    const ctx = lastTutorMsg ? `For context, the tutor just said: "${lastTutorMsg}".\n` : "";
+    const messages = [
+      { role: "system", content: feedbackSystemPrompt() },
+      { role: "user", content: `${ctx}The student's reply was: "${userText}".\nEvaluate ONLY the student's reply.` },
+    ];
     const txt = await ollamaChat({ messages, format:"json", num_predict: 240, temperature: 0.2 });
     const parsed = safeParse(txt);
     if (!parsed || typeof parsed !== "object") return null;
@@ -1480,6 +1486,7 @@ async function sendToAI(userText, isGreeting, userBubble) {
 
     const replyText = reply || "(no reply)";
     addAITurn(replyText);
+    lastTutorMsg = replyText;
     speak(replyText);
     history.push({ role: "assistant", content: replyText });
     if (history.length > 16) history = history.slice(-16);
