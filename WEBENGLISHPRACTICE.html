@@ -1398,8 +1398,14 @@ async function generateFlashcard(word) {
   const tgt = targetLang().english;
   const nat = nativeLangName();
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
-  const instruction = `Create a study flashcard for the ${tgt} word "${word}" for a ${nat}-speaking learner. Respond ONLY with valid JSON, no markdown, with this exact shape:
-{"translation":"<${nat} translation>","pos":"<part of speech>","conjugations":[{"label":"present","value":"..."},{"label":"past","value":"..."},{"label":"past participle","value":"..."},{"label":"gerund","value":"..."}],"correctExample":"<a correct ${tgt} sentence>","commonError":"<a common incorrect ${tgt} sentence learners make>","otherMeanings":[{"pos":"noun","meaning":"<other ${nat} meaning>","example":"<short example>"}],"frequency":<1-5 integer>,"tip":"<one helpful study tip in ${nat}>"}`;
+  const instruction = `You create a study flashcard for the ${tgt} word "${word}". The learner's native language is ${nat}.
+Strict language rules:
+- "translation", "note" and "tip" must be written in ${nat}.
+- "pos", "conjugations" values, "correctExample" and "commonError" must be written in ${tgt} (the language of the word).
+- Only include conjugations if "${word}" is a VERB in ${tgt}; if it is NOT a verb (noun, adjective, adverb, etc.) return an empty array [].
+- "otherMeanings": the "meaning" field in ${nat}, the "example" field in ${tgt}.
+Respond ONLY with valid JSON, no markdown, exactly this shape:
+{"translation":"<${nat} translation of the word>","pos":"<part of speech in ${tgt}>","conjugations":[{"label":"present","value":"<${tgt} form>"},{"label":"past","value":"<${tgt} form>"},{"label":"past participle","value":"<${tgt} form>"},{"label":"gerund","value":"<${tgt} form>"}],"correctExample":"<a correct sentence in ${tgt} using the word>","commonError":"<a common incorrect sentence in ${tgt} that learners make>","otherMeanings":[{"pos":"<pos>","meaning":"<other meaning in ${nat}>","example":"<short example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<one helpful study tip in ${nat}>"}`;
   try {
     const res = await fetch(url, {
       method:"POST",
