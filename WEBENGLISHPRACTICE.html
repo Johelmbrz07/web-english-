@@ -1,38 +1,39 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Práctica de inglés con IA</title>
+<title>Language practice with AI</title>
 <style>
-  /* ============ TEMA OSCURO / TOKENS ============ */
+  /* ============ DARK THEME / TOKENS ============ */
   :root {
-    --bg-0: #0b0f1a;
-    --bg-1: #111726;
-    --bg-2: #161d2e;
-    --bg-3: #1d2638;
-    --surface: #141b2b;
-    --surface-2: #1a2335;
-    --border: #26314a;
-    --border-soft: #1f2840;
-    --text: #e7ecf5;
-    --text-dim: #9aa6bd;
-    --text-mute: #6b7689;
-    --accent: #ffc861;       /* ámbar (acciones primarias) */
-    --accent-strong: #ffb838;
-    --accent-ink: #2a1d00;
-    --blue: #3b82f6;         /* navegación activa */
-    --blue-soft: #1e3a5f;
-    --green: #34d399;
-    --green-soft: #123a2e;
-    --red: #f87171;
-    --red-soft: #3a1620;
-    --purple: #a78bfa;
-    --purple-soft: #241a3d;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --shadow: 0 10px 30px rgba(0,0,0,.45);
-    --nav-h: 76px;
+    --bg-0: #0a0607;
+    --bg-1: rgba(22,12,14,.55);
+    --bg-2: rgba(40,20,24,.45);
+    --bg-3: rgba(255,255,255,.08);
+    --surface: rgba(34,22,25,.55);
+    --surface-2: rgba(52,30,35,.5);
+    --border: rgba(255,255,255,.13);
+    --border-soft: rgba(255,255,255,.07);
+    --text: #f6f0f1;
+    --text-dim: #c0b2b5;
+    --text-mute: #8a7c80;
+    --accent: #ff453a;
+    --accent-strong: #d70015;
+    --accent-ink: #ffffff;
+    --blue: #ff5a4d;            /* navegación activa en rojo */
+    --blue-soft: rgba(255,69,58,.18);
+    --green: #32d74b;
+    --green-soft: rgba(20,90,55,.4);
+    --red: #ff6b6b;
+    --red-soft: rgba(120,28,38,.45);
+    --purple: #ff9aa2;
+    --purple-soft: rgba(120,40,52,.4);
+    --radius: 20px;
+    --radius-sm: 13px;
+    --shadow: 0 14px 44px rgba(0,0,0,.55);
+    --glass: blur(22px) saturate(180%);
+    --nav-h: 78px;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -42,9 +43,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--text);
     background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(124,77,255,.12), transparent 60%),
-      radial-gradient(900px 500px at 0% 100%, rgba(59,130,246,.10), transparent 55%),
-      linear-gradient(180deg, #0b0f1a 0%, #0a0e18 100%);
+      radial-gradient(1100px 620px at 82% -12%, rgba(255,69,58,.26), transparent 60%),
+      radial-gradient(900px 520px at 5% 8%, rgba(215,0,21,.20), transparent 55%),
+      radial-gradient(800px 600px at 100% 100%, rgba(255,120,90,.14), transparent 60%),
+      radial-gradient(700px 500px at 0% 100%, rgba(140,10,30,.22), transparent 55%),
+      linear-gradient(180deg, #0a0607 0%, #070405 100%);
     background-attachment: fixed;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
@@ -59,10 +62,7 @@
   }
 
   /* ============ HEADER ============ */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 18px;
-  }
+  .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
   .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
   .brand .logo {
     width:34px; height:34px; border-radius:10px;
@@ -74,29 +74,23 @@
     background: var(--surface-2); border:1px solid var(--border);
     border-radius: 999px; padding:6px 12px; cursor:pointer; font-size:14px; color:var(--text);
   }
-  .voice-pill select {
-    background:transparent; border:none; color:var(--text); font-size:14px; cursor:pointer; outline:none;
-  }
+  .voice-pill select { background:transparent; border:none; color:var(--text); font-size:14px; cursor:pointer; outline:none; }
 
   /* ============ VIEWS ============ */
   .view { display:none; animation: fade .25s ease; }
   .view.active { display:block; }
   @keyframes fade { from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:none;} }
-
   .section-title { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mute); margin:22px 4px 10px; }
 
   /* ---- Lesson / start card ---- */
   .lesson-card {
     background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
-    border:1px solid var(--border);
-    border-radius: var(--radius);
-    padding:22px;
-    box-shadow: var(--shadow);
+    border:1px solid var(--border); border-radius: var(--radius); padding:22px; box-shadow: var(--shadow);
   }
   .lesson-head { display:flex; gap:16px; align-items:flex-start; }
   .lesson-num {
     flex:0 0 auto; width:58px; height:58px; border-radius:14px;
-    background: rgba(255,200,97,.12); color:var(--accent);
+    background: rgba(255,69,58,.16); color:var(--accent);
     display:grid; place-items:center; font-weight:800; font-size:18px;
   }
   .lesson-title { font-size:22px; font-weight:800; line-height:1.25; margin:2px 0 0; }
@@ -109,10 +103,7 @@
   }
   .topic-input:focus { border-color: var(--blue); }
 
-  .btn {
-    border:none; border-radius:14px; padding:15px 18px; font-size:16px; font-weight:700;
-    cursor:pointer; width:100%; transition: transform .08s ease, filter .15s ease;
-  }
+  .btn { border:none; border-radius:14px; padding:15px 18px; font-size:16px; font-weight:700; cursor:pointer; width:100%; transition: transform .08s ease, filter .15s ease; }
   .btn:active { transform: translateY(1px); }
   .btn-primary { background: linear-gradient(180deg, var(--accent), var(--accent-strong)); color: var(--accent-ink); }
   .btn-primary:hover { filter: brightness(1.05); }
@@ -128,29 +119,32 @@
     padding:16px; min-height:46vh; max-height:52vh; overflow-y:auto;
     display:flex; flex-direction:column; gap:12px;
   }
-  .bubble { max-width:82%; padding:11px 14px; border-radius:16px; font-size:15px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
+  .bubble { max-width:86%; padding:11px 14px; border-radius:16px; font-size:15px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
   .bubble .who { display:block; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-mute); margin-bottom:3px; }
-  .userBubble { align-self:flex-end; background: var(--blue-soft); border:1px solid #2a4f7a; border-bottom-right-radius:5px; }
+  .userBubble { align-self:flex-end; background: var(--blue-soft); border:1px solid rgba(255,69,58,.35); border-bottom-right-radius:5px; }
   .aiBubble { align-self:flex-start; background: var(--surface-2); border:1px solid var(--border); border-bottom-left-radius:5px; }
   .aiBubble .word { cursor:pointer; border-bottom:1px dashed transparent; }
   .aiBubble .word:hover { border-bottom-color: var(--accent); }
-  .correction { margin-top:8px; padding:8px 10px; border-radius:10px; background: var(--green-soft); border-left:3px solid var(--green); font-size:13px; color:#bdf0db; }
+  .feedback { margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.12); font-size:13px; color:#c8d2e6; }
+  .feedback .score { font-weight:800; }
+  .feedback .score.good { color: var(--green); }
+  .feedback .score.mid  { color: var(--accent); }
+  .feedback .score.low  { color: var(--red); }
+  .feedback .fb-note { color: var(--text-dim); }
+  .feedback .fb-fix { color:#bfe9d6; font-style:italic; }
+  .ai-actions { display:flex; gap:8px; margin-top:8px; }
+  .ai-actions button { background:transparent; border:none; color:var(--text-mute); cursor:pointer; padding:3px; border-radius:6px; font-size:15px; }
+  .ai-actions button:hover { color:var(--text); background:var(--bg-3); }
   .chat-empty { color:var(--text-mute); text-align:center; margin:auto; font-size:14px; }
 
-  .mic-status {
-    display:flex; align-items:center; justify-content:center; gap:10px;
-    margin-top:14px; color:var(--text-dim); font-size:14px; min-height:22px;
-  }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--text-mute); }
+  .mic-status { display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px; color:var(--text-dim); font-size:14px; min-height:22px; text-align:center; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--text-mute); flex:0 0 auto; }
   .dot.live { background: var(--red); animation: pulse 1.2s infinite; }
   @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(248,113,113,.5);} 70%{box-shadow:0 0 0 8px rgba(248,113,113,0);} 100%{box-shadow:0 0 0 0 rgba(248,113,113,0);} }
 
   /* ============ FLASHCARDS ============ */
   .fc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px; margin-top:6px; }
-  .fc-chip {
-    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px;
-    cursor:pointer; transition:border-color .15s ease, transform .08s ease;
-  }
+  .fc-chip { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; cursor:pointer; transition:border-color .15s ease, transform .08s ease; }
   .fc-chip:hover { border-color:var(--accent); }
   .fc-chip:active { transform:scale(.98); }
   .fc-chip .w { font-size:18px; font-weight:800; }
@@ -173,11 +167,7 @@
   .flip { perspective:1600px; }
   .flip-inner { position:relative; transition:transform .55s; transform-style:preserve-3d; min-height:430px; }
   .flip.flipped .flip-inner { transform: rotateY(180deg); }
-  .face {
-    position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
-    background: var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    padding:22px; overflow-y:auto; box-shadow: var(--shadow);
-  }
+  .face { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; background: var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; overflow-y:auto; box-shadow: var(--shadow); }
   .face.back { transform: rotateY(180deg); }
   .face.front { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; }
   .front .big-word { font-size:46px; font-weight:800; font-family: Georgia, "Times New Roman", serif; }
@@ -205,9 +195,9 @@
   .freq .seg { width:34px; height:8px; border-radius:3px; background:var(--bg-3); }
   .freq .seg.on { background:var(--green); }
   .freq .label { margin-left:8px; color:var(--text-dim); font-size:13px; }
-  .tip { background:var(--purple-soft); border:1px solid #3a2d63; border-radius:12px; padding:13px 15px; margin-top:14px; }
-  .tip .tip-h { color:#d7c9ff; font-weight:700; font-size:14px; margin-bottom:5px; }
-  .tip .tip-b { color:#bcaee0; font-size:14px; line-height:1.5; }
+  .tip { background:var(--purple-soft); border:1px solid rgba(255,120,120,.28); border-radius:12px; padding:13px 15px; margin-top:14px; }
+  .tip .tip-h { color:#ffd0d0; font-weight:700; font-size:14px; margin-bottom:5px; }
+  .tip .tip-b { color:#ecc4c8; font-size:14px; line-height:1.5; }
   .card-actions { display:flex; gap:10px; margin-top:16px; }
   .card-actions button { flex:1; background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px; cursor:pointer; font-size:14px; }
   .card-actions .del { color:var(--red); }
@@ -225,53 +215,77 @@
   .seg-desc { margin-top:10px; font-size:13px; color:var(--text-mute); min-height:18px; }
   .field { margin-bottom:14px; }
   .field label { display:block; font-size:13px; color:var(--text-dim); margin-bottom:6px; }
-  .field input, .field select {
-    width:100%; padding:11px 12px; background:var(--bg-1); border:1px solid var(--border);
-    border-radius:10px; color:var(--text); font-size:14px; outline:none;
-  }
+  .field input, .field select { width:100%; padding:11px 12px; background:var(--bg-1); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:14px; outline:none; }
   .field input:focus, .field select:focus { border-color:var(--blue); }
   .save-note { color:var(--green); font-size:13px; margin-top:8px; min-height:18px; }
+  .switch-row { display:flex; gap:12px; align-items:flex-start; cursor:pointer; margin-bottom:8px; }
+  .switch-row input[type="checkbox"] { width:20px; height:20px; flex:0 0 auto; margin-top:2px; accent-color: var(--blue); cursor:pointer; }
+  .switch-row .sr-title { font-weight:700; }
+  .hint { color:var(--text-mute); font-size:12px; line-height:1.4; }
+  input[type="range"] { width:100%; accent-color: var(--blue); height:6px; cursor:pointer; }
 
   /* ============ BOTTOM NAV ============ */
   .nav {
     position:fixed; left:0; right:0; bottom:0; height:var(--nav-h);
-    background: rgba(13,18,30,.92); backdrop-filter: blur(14px);
+    background: rgba(18,10,12,.55); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
     border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-around;
-    padding:0 max(10px, env(safe-area-inset-bottom));
-    z-index:50;
+    padding:0 max(10px, env(safe-area-inset-bottom)); z-index:50;
   }
   .nav-item { background:none; border:none; color:var(--text-mute); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:6px 10px; transition:color .15s ease; }
   .nav-item svg { width:24px; height:24px; }
   .nav-item.active { color:var(--blue); }
-  .nav-call {
-    width:58px; height:58px; border-radius:50%; margin-top:-26px;
-    background: linear-gradient(180deg, #3b82f6, #2563eb); color:#fff;
-    box-shadow: 0 8px 22px rgba(37,99,235,.5);
-    display:grid; place-items:center; border:3px solid var(--bg-0);
-  }
-  .nav-call.in-call { background: linear-gradient(180deg, #f87171, #ef4444); box-shadow:0 8px 22px rgba(239,68,68,.5); }
+  .nav-call { width:58px; height:58px; border-radius:50%; margin-top:-26px; background: linear-gradient(180deg, #ff5a4d, #d70015); color:#fff; box-shadow: 0 8px 22px rgba(255,69,58,.5); display:grid; place-items:center; border:3px solid rgba(255,255,255,.12); }
+  .nav-call.in-call { background: linear-gradient(180deg, #6e6e73, #3a3a3c); box-shadow:0 8px 22px rgba(0,0,0,.5); }
   .nav-call svg { width:26px; height:26px; }
 
   /* ============ POPOVER ============ */
   #popover { position:fixed; z-index:100; display:none; }
   #popover.show { display:block; }
-  .popover-content {
-    background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
-    padding:10px; box-shadow:var(--shadow); min-width:160px; transform:translate(-50%, 8px);
-  }
+  .popover-content { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px; box-shadow:var(--shadow); min-width:160px; transform:translate(-50%, 8px); }
   .popover-content .pw { font-weight:700; margin-bottom:4px; }
   .popover-content .pt { color:var(--text-dim); font-size:13px; margin-bottom:8px; }
   .popover-content button { width:100%; background:var(--accent); color:var(--accent-ink); border:none; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; }
 
   /* ============ TOAST ============ */
-  #toast {
-    position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
-    padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px;
-    opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%;
-  }
+  #toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:12px; box-shadow:var(--shadow); font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:200; max-width:90%; }
   #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #lessonBanner { background:rgba(255,69,58,.14); border:1px solid rgba(255,69,58,.32); color:var(--accent); border-radius:12px; padding:10px 14px; margin-bottom:10px; font-size:14px; font-weight:600; backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
+  .send-row { display:flex; gap:10px; margin-top:14px; align-items:stretch; }
+  .send-row .topic-input { flex:1; margin-top:0; }
+  .send-btn { width:auto; margin-top:0; padding:13px 20px; white-space:nowrap; }
+
+  /* ============ GRAMMAR MODAL ============ */
+  .modal-overlay { position:fixed; inset:0; z-index:150; display:none; background:rgba(5,8,15,.72); backdrop-filter:blur(4px); padding:18px; }
+  .modal-overlay.show { display:flex; align-items:center; justify-content:center; }
+  .modal {
+    width:100%; max-width:680px; max-height:86vh; display:flex; flex-direction:column;
+    background:var(--bg-1); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:18px 20px 10px; }
+  .modal-head h2 { margin:0; font-size:20px; }
+  .modal-close { background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; }
+  .modal-close:hover { border-color:var(--red); color:var(--red); }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; padding:4px 20px 14px; }
+  .tab { background:var(--surface-2); border:1px solid var(--border); color:var(--text-dim); border-radius:999px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:600; }
+  .tab.active { background:#fff; color:#0b0f1a; border-color:#fff; }
+  .grammar-list { overflow-y:auto; padding:6px 20px 22px; border-top:1px solid var(--border); }
+  .g-item { display:flex; align-items:center; gap:10px; padding:13px 4px; border-bottom:1px solid var(--border-soft); color:var(--green); cursor:pointer; font-size:15px; }
+  .g-item:hover { color:#7af0c0; }
+  .g-item:last-child { border-bottom:none; }
+  .g-item .g-check { flex:0 0 auto; width:18px; color:var(--green); opacity:0; }
+  .g-item.done .g-check { opacity:1; }
+  .g-item.done { color:var(--text-mute); }
+
+  /* ============ APPLE GLASS (translucent surfaces) ============ */
+  .lesson-card, .chat, .setting, .fc-chip, .face, .voice-pill, .topic-input,
+  .modal, .popover-content, #toast, .userBubble, .aiBubble, .btn-ghost,
+  .field input, .field select, .seg-group, .tab, .study-nav button,
+  .listen-btn, .mini-speak, .modal-close {
+    backdrop-filter: var(--glass);
+    -webkit-backdrop-filter: var(--glass);
+  }
+  .brand .logo, .nav-call { box-shadow: 0 8px 26px rgba(255,69,58,.45); }
 </style>
 </head>
 <body>
@@ -279,10 +293,10 @@
 
   <!-- ===== HEADER ===== -->
   <div class="topbar">
-    <div class="brand"><span class="logo">🎧</span> English<span style="color:var(--accent)">AI</span></div>
+    <div class="brand"><span class="logo">🎧</span> Lingua<span style="color:var(--accent)">AI</span></div>
     <div class="voice-pill">
-      <span id="voiceFlag">🇺🇸</span>
-      <select id="voiceSelect" title="Voz del tutor"></select>
+      <span id="langFlag">🇺🇸</span>
+      <select id="langSelect" title="Practice language"></select>
     </div>
   </div>
 
@@ -292,55 +306,59 @@
       <div class="lesson-head">
         <div class="lesson-num" id="lessonNum">AI</div>
         <div>
-          <div class="lesson-title" id="lessonTitle">Conversación libre</div>
-          <div class="lesson-sub">Habla en inglés con tu tutor de IA. Escribe un tema o empieza directo.</div>
+          <div class="lesson-title" id="lessonTitle">Free conversation</div>
+          <div class="lesson-sub" id="lessonSub">Talk with your AI tutor. Type a topic or just start.</div>
         </div>
       </div>
-      <input type="text" id="topicInput" class="topic-input" placeholder="Tema de la lección (opcional): travel, job interview, cloud..." />
-      <button class="btn btn-primary" style="margin-top:14px" onclick="startCallSession()">▶ Start call</button>
+      <input type="text" id="topicInput" class="topic-input" placeholder="Lesson topic (optional): travel, job interview, daily life..." />
+      <button class="btn btn-primary" style="margin-top:14px" onclick="startCallSession()">&#9654; Start call</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="openGrammar()">📚 Grammar lessons</button>
     </div>
 
     <div class="chat-wrap" id="chatWrap" style="display:none">
+      <div id="lessonBanner" style="display:none"></div>
       <div class="chat" id="messageContainer">
-        <div class="chat-empty" id="chatEmpty">Di algo o escribe para empezar la conversación 👋</div>
+        <div class="chat-empty" id="chatEmpty">Say something or type to start the conversation 👋</div>
       </div>
-      <div class="mic-status"><span class="dot" id="micDot"></span><span id="micText">Listo</span></div>
+      <div class="mic-status"><span class="dot" id="micDot"></span><span id="micText">Ready</span></div>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="muteBtn" onclick="toggleMute()">🎤 Pausar mic</button>
-        <button class="btn btn-danger" onclick="endCallSession()">■ End call</button>
+        <button class="btn btn-ghost" id="muteBtn" onclick="toggleMute()">🎤 Pause mic</button>
+        <button class="btn btn-danger" onclick="endCallSession()">&#9632; End call</button>
       </div>
-      <input type="text" id="manualInput" class="topic-input" placeholder="...o escribe tu mensaje aquí y presiona Enter" onkeydown="if(event.key==='Enter'){sendManual();}" />
+      <div class="send-row">
+        <input type="text" id="manualInput" class="topic-input" placeholder="...or type / correct your message, then Send" onkeydown="if(event.key==='Enter'){sendManual();}" />
+        <button class="btn btn-primary send-btn" onclick="sendManual()">Send</button>
+      </div>
     </div>
   </section>
 
   <!-- ===== VIEW: FLASHCARDS ===== -->
   <section id="view-flashcards" class="view">
-    <div class="section-title">Mis flashcards</div>
+    <div class="section-title">My flashcards</div>
     <div id="fcListWrap">
       <div class="fc-grid" id="fcGrid"></div>
       <div class="empty-state" id="fcEmpty">
         <div class="big">📇</div>
-        <div>Aún no tienes palabras guardadas.</div>
-        <div style="font-size:13px;margin-top:6px">Durante una conversación, toca una palabra del tutor y guárdala.</div>
+        <div>No saved words yet.</div>
+        <div style="font-size:13px;margin-top:6px">During a conversation, tap a word from the tutor to save it.</div>
       </div>
-      <button class="btn btn-ghost" id="studyBtn" style="margin-top:16px;display:none" onclick="openStudy(0)">🎴 Estudiar todas</button>
+      <button class="btn btn-ghost" id="studyBtn" style="margin-top:16px;display:none" onclick="openStudy(0)">🎴 Study all</button>
     </div>
 
-    <!-- study mode -->
     <div id="studyWrap" style="display:none">
       <div class="study-bar">
         <div class="progress-track"><div class="progress-fill" id="studyProgress"></div></div>
         <div class="study-meta">
-          <span class="count" id="studyCount">0 de 0 palabras</span>
+          <span class="count" id="studyCount">0 of 0 words</span>
           <span class="count" id="studyIndex">0 / 0</span>
         </div>
       </div>
       <div class="study-nav">
-        <button id="prevCard" onclick="navStudy(-1)">← Anterior</button>
-        <button id="nextCard" onclick="navStudy(1)">Siguiente →</button>
-        <button style="margin-left:auto" onclick="closeStudy()">✕ Cerrar</button>
+        <button id="prevCard" onclick="navStudy(-1)">← Previous</button>
+        <button id="nextCard" onclick="navStudy(1)">Next →</button>
+        <button style="margin-left:auto" onclick="closeStudy()">✕ Close</button>
       </div>
-      <div class="study-hint">Haz clic en la tarjeta para voltearla</div>
+      <div class="study-hint">Click the card to flip it</div>
       <div class="flip" id="flipCard" onclick="flipCard(event)">
         <div class="flip-inner" id="flipInner"></div>
       </div>
@@ -349,19 +367,73 @@
 
   <!-- ===== VIEW: STATS ===== -->
   <section id="view-stats" class="view">
-    <div class="section-title">Tu progreso</div>
-    <div class="setting"><h3 id="statWords">0</h3><p>Palabras guardadas</p></div>
-    <div class="setting"><h3 id="statSessions">0</h3><p>Conversaciones iniciadas</p></div>
-    <div class="setting"><h3 id="statMessages">0</h3><p>Mensajes enviados al tutor</p></div>
+    <div class="section-title">Your progress</div>
+    <div class="setting"><h3 id="statWords">0</h3><p>Saved words</p></div>
+    <div class="setting"><h3 id="statSessions">0</h3><p>Conversations started</p></div>
+    <div class="setting"><h3 id="statMessages">0</h3><p>Messages sent to the tutor</p></div>
+    <div class="setting"><h3 id="statGrammar">0</h3><p>Grammar lessons completed</p></div>
   </section>
 
   <!-- ===== VIEW: SETTINGS ===== -->
   <section id="view-settings" class="view">
-    <div class="section-title">Ajustes</div>
+    <div class="section-title">Settings</div>
 
     <div class="setting">
-      <h3>Formalidad del tutor</h3>
-      <p>Define el registro con el que te habla la IA.</p>
+      <h3>Practice language</h3>
+      <p>The language you want to practice. This sets speech recognition, the tutor's voice and the tutor's language.</p>
+      <div class="field">
+        <select id="practiceLangSelect"></select>
+      </div>
+    </div>
+
+    <div class="setting">
+      <h3>Explanations language</h3>
+      <p>Corrections and flashcard translations will be written in this language (your native language).</p>
+      <div class="field">
+        <select id="nativeLangSelect"></select>
+      </div>
+    </div>
+
+    <div class="setting">
+      <h3>Conversation</h3>
+      <p>Control how the tutor reacts while you are speaking.</p>
+      <label class="switch-row" for="manualModeToggle">
+        <input type="checkbox" id="manualModeToggle" onchange="setManualMode(this.checked)" />
+        <span><span class="sr-title">Manual mode</span><br>
+          <span class="hint">Press 'Send' or Enter to send a message. The tutor will not auto-respond. Your speech is typed into the box so you can review it first.</span></span>
+      </label>
+      <div class="field" style="margin-top:16px">
+        <label>Tutor patience: <span id="patienceVal">5</span></label>
+        <input type="range" id="patienceSlider" min="1" max="10" value="5" oninput="setPatience(this.value)" />
+        <div class="hint">1 means the tutor responds very quickly · 10 means it waits longer for you to finish speaking or thinking.</div>
+      </div>
+    </div>
+
+    <div class="setting">
+      <h3>Your level &amp; help</h3>
+      <p>The app adapts to you. As a beginner the tutor uses simple words and explains in your language so you can understand.</p>
+      <div class="field">
+        <label>Proficiency level</label>
+        <select id="levelSelect" onchange="setLevel(this.value)">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tutor language usage</label>
+        <select id="langUsageSelect" onchange="setLangUsage(this.value)">
+          <option value="native">Explain in my language (most help)</option>
+          <option value="mixed">Mixed language (recommended)</option>
+          <option value="target">Target language only (immersion)</option>
+        </select>
+      </div>
+      <div class="seg-desc" id="levelNote"></div>
+    </div>
+
+    <div class="setting">
+      <h3>Tutor formality</h3>
+      <p>The register the AI uses when talking to you.</p>
       <div class="seg-group">
         <button class="seg-btn" data-formality="slang" onclick="setFormality('slang')">Slang</button>
         <button class="seg-btn" data-formality="normal" onclick="setFormality('normal')">Normal</button>
@@ -371,36 +443,62 @@
     </div>
 
     <div class="setting">
-      <h3>Motor de IA (Ollama)</h3>
-      <p>La app envía tus mensajes a un servidor Ollama local. Configura la URL y el modelo.</p>
+      <h3>Microphone</h3>
+      <p>If recognition is inaccurate, choose a better microphone (ideally a headset) and keep noise cancellation on.</p>
       <div class="field">
-        <label>URL del servidor</label>
+        <label>Speech recognition engine</label>
+        <select id="sttEngineSelect" onchange="setSttEngine(this.value)">
+          <option value="browser">Browser — fast, less accurate</option>
+          <option value="whisper">Whisper AI — accurate, runs locally</option>
+        </select>
+      </div>
+      <div class="field" id="whisperModelField" style="display:none">
+        <label>Whisper model</label>
+        <select id="whisperModelSelect" onchange="setWhisperModel(this.value)">
+          <option value="Xenova/whisper-tiny">Tiny — fastest, lower accuracy (~40 MB)</option>
+          <option value="Xenova/whisper-base">Base — recommended balance (~80 MB)</option>
+          <option value="Xenova/whisper-small">Small — most accurate, slower (~250 MB)</option>
+        </select>
+      </div>
+      <div class="seg-desc" id="whisperNote"></div>
+      <div class="field">
+        <label>Input device</label>
+        <select id="micDeviceSelect"><option value="">Default microphone</option></select>
+      </div>
+      <label class="switch-row" for="noiseCancelToggle">
+        <input type="checkbox" id="noiseCancelToggle" onchange="setNoiseCancel(this.checked)" />
+        <span><span class="sr-title">Noise cancellation</span><br>
+          <span class="hint">Removes background noise and echo from your speakers (so the tutor's voice isn't transcribed as your words).</span></span>
+      </label>
+    </div>
+
+    <div class="setting">
+      <h3>AI engine (Ollama)</h3>
+      <p>The app sends your messages to a local Ollama server. Set the URL and model.</p>
+      <div class="field">
+        <label>Server URL</label>
         <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" />
       </div>
       <div class="field">
-        <label>Modelo</label>
-        <input type="text" id="ollamaModel" placeholder="llama3" />
+        <label>Model (loaded from your installed models)</label>
+        <select id="ollamaModel"></select>
       </div>
-      <button class="btn btn-ghost" onclick="testConnection()">🔌 Probar conexión</button>
+      <button class="btn btn-ghost" onclick="testConnection()">🔌 Test connection & reload models</button>
       <div class="save-note" id="connNote"></div>
     </div>
 
     <div class="setting">
-      <h3>Idioma de la voz</h3>
-      <p>Acento usado al escuchar palabras y respuestas del tutor.</p>
+      <h3>Voice</h3>
+      <p>The voice used to read words and the tutor's replies out loud.</p>
       <div class="field">
-        <select id="ttsLangSelect">
-          <option value="en-US">🇺🇸 Inglés (Estados Unidos)</option>
-          <option value="en-GB">🇬🇧 Inglés (Reino Unido)</option>
-          <option value="en-AU">🇦🇺 Inglés (Australia)</option>
-        </select>
+        <select id="voiceSelect"></select>
       </div>
     </div>
 
     <div class="setting">
-      <h3>Datos</h3>
-      <p>Tus flashcards y ajustes se guardan en este navegador.</p>
-      <button class="btn btn-danger" onclick="resetData()">Borrar todas las flashcards</button>
+      <h3>Data</h3>
+      <p>Your flashcards and settings are stored in this browser.</p>
+      <button class="btn btn-danger" onclick="resetData()">Delete all flashcards</button>
     </div>
   </section>
 
@@ -408,13 +506,13 @@
   <nav class="nav">
     <button class="nav-item active" data-view="practice" onclick="switchView('practice')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5l8 5-8 9z" stroke-linejoin="round"/><path d="M14 5l6 7-6 7"/></svg>
-      Práctica
+      Practice
     </button>
     <button class="nav-item" data-view="flashcards" onclick="switchView('flashcards')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
       Flashcards
     </button>
-    <button class="nav-call" id="navCall" onclick="toggleCall()" title="Iniciar/terminar llamada">
+    <button class="nav-call" id="navCall" onclick="toggleCall()" title="Start / end call">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.9 15.9 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.2z"/></svg>
     </button>
     <button class="nav-item" data-view="stats" onclick="switchView('stats')">
@@ -428,45 +526,334 @@
   </nav>
 </div>
 
-<!-- popover for saving words -->
 <div id="popover"><div class="popover-content" id="popoverContent"></div></div>
 <div id="toast"></div>
+
+<!-- ===== GRAMMAR MODAL ===== -->
+<div id="grammarModal" class="modal-overlay" onclick="if(event.target===this)closeGrammar()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Grammar lesson</h2>
+      <button class="modal-close" onclick="closeGrammar()">✕</button>
+    </div>
+    <div class="tabs" id="grammarTabs">
+      <button class="tab active" data-level="beginner" onclick="setGrammarTab('beginner')"></button>
+      <button class="tab" data-level="intermediate" onclick="setGrammarTab('intermediate')"></button>
+      <button class="tab" data-level="advanced" onclick="setGrammarTab('advanced')"></button>
+      <button class="tab" data-level="random" onclick="startRandomGrammar()">Random</button>
+    </div>
+    <div class="grammar-list" id="grammarList"></div>
+  </div>
+</div>
 
 <script>
 "use strict";
 
 /* =========================================================
-   ESTADO Y PERSISTENCIA
+   LANGUAGES
 ========================================================= */
-const LS = {
-  flashcards: "ea_flashcards",
-  settings: "ea_settings",
-  stats: "ea_stats",
+const LANGUAGES = [
+  { code:"en-US", name:"English (US)",            english:"English",              flag:"🇺🇸" },
+  { code:"en-GB", name:"English (UK)",            english:"English",              flag:"🇬🇧" },
+  { code:"pt-BR", name:"Portuguese (Brazil)",     english:"Brazilian Portuguese", flag:"🇧🇷" },
+  { code:"pt-PT", name:"Portuguese (Portugal)",   english:"European Portuguese",  flag:"🇵🇹" },
+  { code:"es-ES", name:"Spanish (Spain)",         english:"Spanish",              flag:"🇪🇸" },
+  { code:"es-MX", name:"Spanish (Mexico)",        english:"Spanish",              flag:"🇲🇽" },
+  { code:"fr-FR", name:"French",                  english:"French",               flag:"🇫🇷" },
+  { code:"de-DE", name:"German",                  english:"German",               flag:"🇩🇪" },
+  { code:"it-IT", name:"Italian",                 english:"Italian",              flag:"🇮🇹" },
+];
+const NATIVE_LANGS = [
+  { code:"es", name:"Spanish" },
+  { code:"en", name:"English" },
+  { code:"pt", name:"Portuguese" },
+  { code:"fr", name:"French" },
+  { code:"de", name:"German" },
+  { code:"it", name:"Italian" },
+];
+function targetLang() { return LANGUAGES.find(l => l.code === settings.practiceLang) || LANGUAGES[0]; }
+function nativeLangName() { return (NATIVE_LANGS.find(l => l.code === settings.nativeLang) || NATIVE_LANGS[0]).name; }
+
+/* =========================================================
+   GRAMMAR LESSONS (Beginner 72 / Intermediate 101 / Advanced 58)
+========================================================= */
+const GRAMMAR = {
+  beginner: [
+    "'Do' vs 'Make' – What's the difference?",
+    "On time vs In time, At the end vs In the end",
+    "Review of all verb tenses A2",
+    "Present simple forms of 'to be' – am/is/are",
+    "Present simple – I do, I don't, Do I?",
+    "Present continuous – I'm doing, I'm not doing, Are you doing?",
+    "Present simple or present continuous?",
+    "Present simple vs present continuous",
+    "Have got",
+    "Present perfect – form and use",
+    "Present perfect or past simple?",
+    "Past continuous and past simple",
+    "Was/were – past simple of 'be'",
+    "Past simple – regular/irregular verbs",
+    "Past simple – negatives and questions",
+    "Past simple – Form and use",
+    "Past perfect",
+    "'Will' and 'shall' – Future",
+    "Be going to – plans and predictions",
+    "Will vs be going to – future",
+    "The imperative – Sit down! Don't talk!",
+    "Present continuous for future arrangements",
+    "Can, can't – ability, possibility, permission",
+    "Would you like…? I'd like…",
+    "Have to, don't have to, must, mustn't",
+    "Should, shouldn't",
+    "Might, might not – possibility",
+    "Used to, didn't use to – past habits and states",
+    "How to use the verb 'go' in English",
+    "The different uses of the verb 'get'",
+    "Verbs with two objects",
+    "Stative vs dynamic verbs (or non-action vs action verbs)",
+    "Phrasal verbs: transitive and intransitive, separable and inseparable",
+    "First conditional and future time clauses",
+    "Second conditional",
+    "Present and past simple passive: be + past participle",
+    "Reported speech – indirect speech",
+    "Verbs + to + infinitive and verbs + -ing",
+    "Expressing purpose with 'to' and 'for'",
+    "Infinitives and gerunds – verb patterns",
+    "Subject pronouns, object pronouns, possessive pronouns, possessive adjectives",
+    "A/an, plurals – singular and plural forms",
+    "A/an, the, no article – the use of articles in English",
+    "A, some, any – countable and uncountable nouns",
+    "Much, many, a lot of, a little, a few",
+    "This, that, these, those",
+    "Possessive adjectives and subject pronouns (I/my, you/your, etc.)",
+    "Object pronouns vs subject pronouns – me or I, she or her?",
+    "Whose, possessive 's – Whose is this? It's Mike's",
+    "Something, anything, nothing, etc.",
+    "Much, many, little, few, some, any – quantifiers",
+    "Too, too much, too many, enough",
+    "Defining relative clauses – who, which, that, where",
+    "There is, there are – there was, there were",
+    "There or it",
+    "So, neither – so am I, neither do I, etc.",
+    "Adjectives – old, interesting, expensive, etc.",
+    "Adverbs of manner (slowly) – or adjectives (slow)?",
+    "Comparative adjectives – older than, more important than, etc.",
+    "Superlative adjectives – the oldest, the most important, etc.",
+    "No longer, any longer, anymore",
+    "Prepositions of movement – along, across, over, etc.",
+    "Conjunctions: and, but, or, so, because",
+    "However, although, because, so, and time connectors",
+    "At, in, on – prepositions of time",
+    "At, in, on – prepositions of place",
+    "Next to, under, between, in front of, behind, over, etc.",
+    "Questions – word order and question words",
+    "Asking questions in English – Question forms",
+    "Subject questions, questions with preposition",
+    "Adverbs of frequency with present simple",
+    "Basic word order in English",
+  ],
+  intermediate: [
+    "Review of all verb tenses B1",
+    "Review of all verb tenses B1-B2",
+    "Present simple or present continuous",
+    "Past simple or present perfect?",
+    "Present perfect simple and present perfect continuous",
+    "Present perfect simple or continuous",
+    "Past simple, past continuous, past perfect",
+    "Narrative tenses – all past tenses",
+    "Narrative tenses, used to, would",
+    "Future forms – will, be going to, present continuous",
+    "Future continuous and future perfect",
+    "Future forms – expressing future time",
+    "Other ways to express future – be about to, be due to, etc.",
+    "Future in the past",
+    "So, such (a), so much, so many",
+    "Have to, must, should – obligation, prohibition, necessity, advice",
+    "Had better… it's time",
+    "Can, could, be able to – ability and possibility",
+    "Modal verbs of deduction – must, might, could, can't",
+    "Usually, used to, be used to, get used to",
+    "B1 Phrasal verbs 1 – Exercises and explanation",
+    "B1 Phrasal verbs 2 – Exercises and explanation",
+    "B1 Phrasal verbs 3 – Exercises and explanation",
+    "Past modal verbs of deduction",
+    "Likely, unlikely, bound, definitely, probably – probability",
+    "Used to, be used to, get used to",
+    "Would and used to – past habits and repeated actions",
+    "Verbs of the senses: look, sound, feel, etc.",
+    "Modal verbs – permission, obligation, prohibition, necessity",
+    "Speculation and deduction – modal verbs and expressions",
+    "Verbs of the senses",
+    "'Get' – different meanings",
+    "The passive with reporting verbs – It is said that …",
+    "First conditional, future time clauses",
+    "Zero and first conditional and future time clauses",
+    "Second conditional – unreal situations",
+    "First and second conditionals",
+    "Third conditional – past unreal situations",
+    "Second and third conditionals – unreal conditionals",
+    "Unless, even if, provided, as long as, etc. – other expressions in conditionals",
+    "All conditionals – mixed conditionals, alternatives to if, inversion",
+    "Adjectives without noun",
+    "Mixed conditionals – If I were you, I wouldn't have done it",
+    "Wishes and regrets – I wish / if only",
+    "Wish, rather, if only, it's time – unreal uses of past tenses",
+    "Passive verb forms",
+    "Active and passive voice",
+    "The passive voice – all tenses",
+    "Have something done",
+    "Distancing – expressions and passive of reporting verbs",
+    "Passive verbs with two objects",
+    "Gerund or infinitive – verb patterns",
+    "Possessive 's with time expressions – Two hours' walk",
+    "Indirect speech – reported speech",
+    "Gerund or infinitive – do, to do, doing",
+    "Would rather, would prefer – expressing preference",
+    "Reporting verbs – admit doing, refuse to do, etc.",
+    "Verb + object + infinitive/gerund – verb patterns",
+    "Gerunds and infinitives – complex forms",
+    "Adjective order",
+    "A(n), the, no article",
+    "Much, many, a lot, little, few, some, any, no – quantifiers",
+    "All, both – quantifiers",
+    "Both, either, neither – quantifiers",
+    "Reflexive pronouns – myself, yourself",
+    "Any, no, none – quantifiers",
+    "Another, other, others, the other, the others",
+    "Quantifiers – all, most, both, either, neither, any, no, none",
+    "Reflexive and reciprocal pronouns",
+    "Generic pronouns – common-gender pronouns",
+    "Compound nouns and possessive forms",
+    "Defining and non-defining relative clauses",
+    "Whatever, whenever, wherever, whoever, however",
+    "Relative clauses – defining and non-defining",
+    "There and it – preparatory subjects",
+    "Question tags – aren't you? don't you?",
+    "Auxiliary verbs – different uses",
+    "Have – auxiliary or main verb",
+    "Ellipsis and substitution",
+    "Comparative and superlative adjectives and adverbs",
+    "Compound adjectives with numbers: 'a two-day trip'",
+    "The … the … comparatives",
+    "-Ed/-ing adjectives – adjectives from verbs",
+    "Participles as adjectives (-ed / -ing adjectives)",
+    "Clauses of contrast and purpose",
+    "So, such, such a, so much, so many",
+    "Already, still, yet – What's the difference?",
+    "Pretty, rather, quite, fairly",
+    "Inversion with negative adverbials – adding emphasis",
+    "Clauses of contrast, purpose and reason",
+    "Clauses of contrast, purpose, reason and result",
+    "Discourse markers – linking words",
+    "Participle clauses",
+    "Verb + preposition",
+    "Adjective + preposition",
+    "During, for, while",
+    "For, since, from – what's the difference?",
+    "Questions – different types",
+    "Indirect questions",
+    "Position of adverbs and adverb phrases",
+    "Cleft sentences – adding emphasis",
+  ],
+  advanced: [
+    "Future time expressions in subordinate clauses",
+    "Advanced aspects of the present perfect",
+    "Subtle distinctions between present tenses",
+    "State verbs in continuous forms",
+    "Advanced narrative techniques",
+    "Mixed time frames in storytelling",
+    "Literary uses of past tenses",
+    "Complex future time references",
+    "Future perfect continuous",
+    "Subtle distinctions in future forms",
+    "Advanced modal perfect forms",
+    "Hedging with modal verbs",
+    "Complex phrasal verb patterns",
+    "Formal alternatives to modal verbs",
+    "Idiomatic and figurative uses of phrasal verbs",
+    "Mixed and complex conditionals",
+    "Alternatives to if in conditional sentences",
+    "Subjunctive mood in formal English",
+    "Advanced expressions of hypothesis and speculation",
+    "Complex passive constructions",
+    "Passive infinitives and gerunds",
+    "Advanced causative forms",
+    "Passive with modal perfects",
+    "Advanced reporting structures",
+    "Reporting with complex tense shifts",
+    "Reporting with modals and conditionals",
+    "Complex verb patterns",
+    "Sentential relative clauses",
+    "Advanced gerund and infinitive constructions",
+    "Perfect and passive forms of gerunds and infinitives",
+    "Article usage in academic writing",
+    "Complex noun phrases",
+    "Advanced determiners and quantifiers",
+    "Nominalization in formal writing",
+    "Multiple relative clauses",
+    "Complex relative constructions",
+    "Reduced relative clauses",
+    "Complex auxiliary patterns",
+    "Auxiliary emphasis and inversion",
+    "Marginal and semi-auxiliaries",
+    "Complex prepositional phrases",
+    "Complex gradability patterns",
+    "Adverbial phrases and clauses",
+    "Position of adverbials for emphasis",
+    "Advanced comparative constructions",
+    "Complex subordination patterns",
+    "Advanced discourse markers",
+    "Sophisticated linking expressions",
+    "Complex participial clauses",
+    "Prepositional patterns in formal writing",
+    "Dependent prepositions with complex patterns",
+    "Complex question forms",
+    "Rhetorical questions",
+    "Question patterns in formal contexts",
+    "Fronting and inversion",
+    "Information structure and emphasis",
+    "Complex cleft sentences",
+    "Advanced word order patterns",
+  ],
 };
 
+/* =========================================================
+   STATE & PERSISTENCE
+========================================================= */
+const LS = { flashcards:"ea_flashcards", settings:"ea_settings", stats:"ea_stats", grammar:"ea_grammar_done" };
 const DEFAULT_SETTINGS = {
+  practiceLang: "en-US",
+  nativeLang: "es",
   formality: "normal",
+  level: "beginner",
+  langUsage: "mixed",
+  patience: 5,
+  manualMode: false,
+  noiseCancel: true,
+  micDeviceId: "",
+  sttEngine: "browser",            // "browser" (Web Speech) o "whisper"
+  whisperModel: "Xenova/whisper-base",
   ollamaUrl: "http://localhost:11434",
-  ollamaModel: "llama3",
-  ttsLang: "en-US",
+  ollamaModel: "qwen3:4b",
   voiceName: "",
 };
-
-let settings = loadJSON(LS.settings, DEFAULT_SETTINGS);
+const PREFERRED_MODEL = "qwen3:4b";
+let settings  = loadJSON(LS.settings, DEFAULT_SETTINGS);
 let flashcards = loadJSON(LS.flashcards, []);
-let stats = loadJSON(LS.stats, { sessions: 0, messages: 0 });
+let stats = loadJSON(LS.stats, { sessions:0, messages:0 });
+let grammarDone = loadJSON(LS.grammar, {});
 
 function loadJSON(key, fallback) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
   catch (e) { return fallback; }
 }
 function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-function persist() { saveJSON(LS.settings, settings); saveJSON(LS.flashcards, flashcards); saveJSON(LS.stats, stats); }
+function persist() { saveJSON(LS.settings, settings); saveJSON(LS.flashcards, flashcards); saveJSON(LS.stats, stats); saveJSON(LS.grammar, grammarDone); }
 
 const FORMALITY_TEXT = {
-  slang:  "Casual y relajado: usa modismos, jerga y contracciones, como un amigo.",
-  normal: "Conversacional y neutral: claro y amable, ni muy formal ni muy informal.",
-  formal: "Profesional y correcto: gramática cuidada, vocabulario formal y educado.",
+  slang:  "Casual and relaxed: uses idioms, slang and contractions, like a friend.",
+  normal: "Conversational and neutral: clear and friendly, neither too formal nor too casual.",
+  formal: "Professional and correct: careful grammar and polite, formal vocabulary.",
 };
 const FORMALITY_PROMPT = {
   slang:  "Speak casually using slang, idioms and contractions, like a close friend chatting.",
@@ -475,7 +862,7 @@ const FORMALITY_PROMPT = {
 };
 
 /* =========================================================
-   NAVEGACIÓN ENTRE VISTAS
+   VIEW NAVIGATION
 ========================================================= */
 function switchView(name) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
@@ -500,85 +887,257 @@ function toast(msg) {
 }
 
 /* =========================================================
-   SPEECH RECOGNITION (arreglo del bucle del micrófono)
+   GRAMMAR MODAL
+========================================================= */
+let currentGrammarLevel = "beginner";
+let pendingGrammar = null;
+const LEVEL_LABEL = { beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced" };
+
+function openGrammar() {
+  document.getElementById("grammarModal").classList.add("show");
+  setGrammarTab(currentGrammarLevel);
+}
+function closeGrammar() { document.getElementById("grammarModal").classList.remove("show"); }
+
+function levelProgress(level) {
+  const list = GRAMMAR[level] || [];
+  const done = list.filter(t => grammarDone[t]).length;
+  return { done, total: list.length };
+}
+function updateGrammarTabs() {
+  document.querySelectorAll("#grammarTabs .tab").forEach(tab => {
+    const lvl = tab.dataset.level;
+    if (lvl === "random") return;
+    const p = levelProgress(lvl);
+    tab.textContent = `${LEVEL_LABEL[lvl]} (${p.done}/${p.total})`;
+    tab.classList.toggle("active", lvl === currentGrammarLevel);
+  });
+}
+function setGrammarTab(level) {
+  currentGrammarLevel = level;
+  updateGrammarTabs();
+  const wrap = document.getElementById("grammarList");
+  wrap.innerHTML = "";
+  (GRAMMAR[level] || []).forEach(topic => {
+    const div = document.createElement("div");
+    div.className = "g-item" + (grammarDone[topic] ? " done" : "");
+    div.innerHTML = `<span class="g-check">✓</span><span class="g-text"></span>`;
+    div.querySelector(".g-text").textContent = topic;
+    div.onclick = () => startGrammarLesson(topic);
+    wrap.appendChild(div);
+  });
+  wrap.scrollTop = 0;
+}
+function startGrammarLesson(topic) {
+  grammarDone[topic] = true; persist();
+  closeGrammar();
+  switchView("practice");
+  pendingGrammar = topic;
+  if (isCalling) endCallSession();
+  startCallSession();
+}
+function startRandomGrammar() {
+  const all = [].concat(GRAMMAR.beginner, GRAMMAR.intermediate, GRAMMAR.advanced);
+  const topic = all[Math.floor(Math.random() * all.length)];
+  startGrammarLesson(topic);
+}
+
+/* =========================================================
+   SPEECH RECOGNITION (continuous => no permission loop)
 ========================================================= */
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
-let isCalling = false;   // sesión de llamada activa
-let isMuted = false;     // micrófono pausado
-let restarting = false;
+let isCalling = false;
+let isMuted = false;
+let listening = false;   // recognition active right now
+let speaking = false;    // TTS speaking
+let waitingAI = false;   // waiting for AI reply
+let history = [];        // conversation memory (so the tutor follows the thread)
+let lastTutorMsg = "";   // ultimo mensaje del tutor (contexto para evaluar tu respuesta)
+let micStream = null;    // persistent MediaStream -> avoids re-asking permission
+let restartGuard = { count:0, last:0 };
+let speechBuffer = "";   // accumulates what you say before sending
+let silenceTimer = null; // fires after you stop talking (tutor patience)
+
+// How long (ms) the tutor waits in silence before replying. patience 1..10
+function patienceDelay() { return 900 + (Math.max(1, Math.min(10, settings.patience || 5)) - 1) * 750; }
 
 function micSupported() { return !!SpeechRec; }
 
+// Ask for mic permission ONCE and keep the stream open.
+// Keeping a live stream prevents the browser from re-prompting on every restart (the loop).
+function micConstraints() {
+  const audio = {
+    echoCancellation: settings.noiseCancel !== false, // quita el eco de los parlantes (voz del tutor)
+    noiseSuppression: settings.noiseCancel !== false, // reduce ruido de fondo
+    autoGainControl: settings.noiseCancel !== false,  // nivela el volumen
+  };
+  if (settings.micDeviceId) audio.deviceId = { exact: settings.micDeviceId };
+  return { audio };
+}
+async function ensureMicPermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  if (micStream && micStream.active) return true;
+  try { micStream = await navigator.mediaDevices.getUserMedia(micConstraints()); populateMicDevices(); return true; }
+  catch (e) { micStream = null; return false; }
+}
+function releaseMic() {
+  if (micStream) { try { micStream.getTracks().forEach(t => t.stop()); } catch (e) {} micStream = null; }
+}
+// Re-acquire the stream with new constraints (e.g. after changing mic / noise cancellation).
+async function refreshMicStream() {
+  releaseMic();
+  if (isCalling && micSupported()) await ensureMicPermission();
+}
+async function populateMicDevices() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const mics = devs.filter(d => d.kind === "audioinput");
+    const sel = document.getElementById("micDeviceSelect");
+    if (!sel) return;
+    sel.innerHTML = "";
+    const def = document.createElement("option"); def.value = ""; def.textContent = "Default microphone"; sel.appendChild(def);
+    mics.forEach((m, i) => {
+      const o = document.createElement("option");
+      o.value = m.deviceId;
+      o.textContent = m.label || ("Microphone " + (i + 1));
+      if (m.deviceId === settings.micDeviceId) o.selected = true;
+      sel.appendChild(o);
+    });
+  } catch (e) {}
+}
+
 function buildRecognition() {
   const r = new SpeechRec();
-  r.continuous = false;      // una frase a la vez -> evita re-pedir permiso en bucle
-  r.interimResults = false;  // solo resultados finales
-  r.lang = settings.ttsLang || "en-US";
+  r.continuous = true;       // stay in ONE session -> a single permission grant, no loop
+  r.interimResults = true;   // see speech live + know when you're still talking
+  r.lang = settings.practiceLang || "en-US";
   r.maxAlternatives = 1;
 
-  r.onstart = () => setMic(true, "Escuchando...");
+  r.onstart = () => { listening = true; if (!speaking && !waitingAI) setMic(true, "Listening..."); };
   r.onerror = (e) => {
-    setMic(false, "");
+    listening = false;
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      isCalling = false; updateCallUI();
-      toast("Permiso de micrófono denegado. Habilítalo en el navegador.");
-      setMicText("Micrófono bloqueado");
-    } else if (e.error === "no-speech") {
-      setMicText("No te escuché, intenta de nuevo");
+      isCalling = false; releaseMic(); updateCallUI();
+      toast("Microphone permission denied. Enable it in the browser.");
+      setMic(false, "Mic blocked — use text chat instead");
     } else if (e.error === "audio-capture") {
-      toast("No se detectó micrófono.");
-    } else {
-      setMicText("Listo");
+      toast("No microphone detected.");
+      setMic(false, "No microphone");
     }
+    /* no-speech / aborted: ignore, onend will handle restart */
   };
   r.onresult = (event) => {
-    const text = event.results[event.results.length - 1][0].transcript.trim();
-    if (text) { appendMessage("User", text); sendToAI(text); }
-  };
-  // Reinicio controlado: solo si seguimos en llamada y no estamos en mute / esperando IA
-  r.onend = () => {
-    setMic(false, "");
-    if (isCalling && !isMuted && !waitingAI) {
-      restarting = true;
-      setTimeout(() => { if (isCalling && !isMuted && !waitingAI) safeStart(); }, 350);
+    // ignore anything captured while the tutor is talking or we're waiting for a reply
+    if (!isCalling || isMuted || speaking || waitingAI) return;
+    let finalText = "", interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const seg = event.results[i];
+      if (seg.isFinal) finalText += seg[0].transcript;
+      else interim += seg[0].transcript;
     }
+
+    // MANUAL MODE: transcribe into the input box, never auto-send
+    if (settings.manualMode) {
+      if (finalText.trim()) {
+        const cur = document.getElementById("manualInput").value.trim();
+        document.getElementById("manualInput").value = (cur ? cur + " " : "") + finalText.trim();
+      }
+      setMic(true, "🎤 " + (interim || "Type or speak, then press Enter"));
+      return;
+    }
+
+    // AUTO MODE: accumulate and wait `patience` of silence before sending
+    if (finalText.trim()) { restartGuard.count = 0; speechBuffer = (speechBuffer + " " + finalText).trim(); }
+    const shown = (speechBuffer + " " + interim).trim();
+    setMic(true, shown ? "🎤 " + shown : "Listening...");
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(flushSpeech, patienceDelay());
+  };
+  r.onend = () => {
+    listening = false;
+    if (!speaking && !waitingAI) setMic(false, "");
+    // continuous can still end (silence/network); restart once if call is alive
+    if (isCalling && !isMuted) setTimeout(maybeStart, 350);
   };
   return r;
 }
 
-function safeStart() {
-  if (!recognition) return;
-  try { recognition.start(); }
-  catch (e) { /* ya está corriendo; ignorar InvalidStateError */ }
+// Sends whatever you've said once you've been silent long enough.
+function flushSpeech() {
+  const text = speechBuffer.trim();
+  speechBuffer = "";
+  if (text && isCalling && !isMuted && !waitingAI && !speaking && !settings.manualMode) {
+    handleUserUtterance(text);
+  }
 }
 
-function startCallSession() {
-  if (isCalling) return;
-  if (!micSupported()) {
-    toast("Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.");
-    // aún permitimos el chat por texto
+// Start recognition with an anti-loop throttle.
+function maybeStart() {
+  if (!recognition || listening || isMuted || !isCalling) return;
+  const now = Date.now();
+  if (now - restartGuard.last < 1200) restartGuard.count++; else restartGuard.count = 0;
+  restartGuard.last = now;
+  if (restartGuard.count > 8) { setMic(false, "Recognition paused (loop detected). Check mic permission or use text chat."); return; }
+  try { recognition.start(); }
+  catch (e) { /* InvalidStateError: already running */ }
+}
+
+function startCallSession() { if (!isCalling) startCallAsync(); }
+
+async function startCallAsync() {
+  let micOk = false;
+  if (micSupported()) {
+    micOk = await ensureMicPermission();
+    if (!micOk) toast("No mic permission. You can still use text chat.");
+  } else {
+    toast("Your browser doesn't support speech. Use Chrome or Edge (or text chat).");
   }
-  isCalling = true; isMuted = false; waitingAI = false;
-  stats.sessions++; persist(); 
+
+  isCalling = true; isMuted = false; waitingAI = false; restartGuard = { count:0, last:0 };
+  speechBuffer = ""; clearTimeout(silenceTimer); history = []; lastTutorMsg = "";
+  stats.sessions++; persist();
   document.getElementById("lessonCard").style.display = "none";
   document.getElementById("chatWrap").style.display = "block";
   clearChat();
-  const topic = document.getElementById("topicInput").value.trim();
+  document.getElementById("muteBtn").textContent = "🎤 Pause mic";
   updateCallUI();
 
-  // saludo / arranque de lección
-  if (topic) sendToAI(`Let's start a lesson about: ${topic}. Begin the conversation.`, true);
-  else sendToAI("Start a friendly English conversation with a short greeting and one question.", true);
+  if (settings.sttEngine === "whisper") {
+    if (micOk) startWhisperListening();
+    else setMic(false, "Text only mode");
+  } else if (micSupported() && micOk) {
+    recognition = buildRecognition(); maybeStart();
+  } else {
+    setMic(false, "Text only mode");
+  }
 
-  if (micSupported()) { recognition = buildRecognition(); safeStart(); }
-  else setMicText("Modo solo texto (sin micrófono)");
+  const topic = document.getElementById("topicInput").value.trim();
+  const tgt = targetLang().english;
+  const grammar = pendingGrammar; pendingGrammar = null;
+  const banner = document.getElementById("lessonBanner");
+  if (grammar) {
+    banner.style.display = "block"; banner.textContent = "📚 Grammar lesson: " + grammar;
+    document.getElementById("lessonTitle").textContent = "Free conversation";
+    sendToAI(`This is a ${tgt} grammar lesson about: "${grammar}". Briefly explain the key rule with one clear example, then ask me a question so I can practice it. Throughout the lesson, focus your corrections on this grammar point. Keep replies short.`, true, null);
+  } else if (topic) {
+    banner.style.display = "block"; banner.textContent = "💬 Topic: " + topic;
+    sendToAI(`Start a ${tgt} conversation lesson about: ${topic}.`, true, null);
+  } else {
+    banner.style.display = "none"; banner.textContent = "";
+    sendToAI(`Start a friendly ${tgt} conversation with a short greeting and one question.`, true, null);
+  }
 }
 
 function endCallSession() {
-  isCalling = false;
-  if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; }
-  setMic(false, "Llamada finalizada");
+  isCalling = false; isMuted = false; listening = false; waitingAI = false; speaking = false;
+  speechBuffer = ""; clearTimeout(silenceTimer);
+  if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
+  stopWhisperListening();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  releaseMic();
+  setMic(false, "Call ended");
   document.getElementById("lessonCard").style.display = "block";
   document.getElementById("chatWrap").style.display = "none";
   updateCallUI();
@@ -586,8 +1145,7 @@ function endCallSession() {
 
 function toggleCall() {
   switchView("practice");
-  if (isCalling) endCallSession();
-  else startCallSession();
+  if (isCalling) endCallSession(); else startCallSession();
 }
 
 function toggleMute() {
@@ -595,180 +1153,479 @@ function toggleMute() {
   isMuted = !isMuted;
   const btn = document.getElementById("muteBtn");
   if (isMuted) {
-    if (recognition) { try { recognition.stop(); } catch (e) {} }
-    btn.textContent = "🎤 Reanudar mic"; setMicText("Micrófono en pausa");
+    if (recognition) { try { recognition.abort(); } catch (e) {} }
+    listening = false; speechBuffer = ""; clearTimeout(silenceTimer);
+    btn.textContent = "🎤 Resume mic"; setMic(false, "Microphone paused");
   } else {
-    btn.textContent = "🎤 Pausar mic"; safeStart();
+    btn.textContent = "🎤 Pause mic"; maybeStart();
   }
 }
 
 function setMic(live, text) {
   document.getElementById("micDot").classList.toggle("live", live);
-  if (text !== "") setMicText(text);
+  if (text !== "") document.getElementById("micText").textContent = text;
 }
-function setMicText(t) { document.getElementById("micText").textContent = t; }
-function updateCallUI() {
-  const nav = document.getElementById("navCall");
-  nav.classList.toggle("in-call", isCalling);
+function updateCallUI() { document.getElementById("navCall").classList.toggle("in-call", isCalling); }
+
+/* =========================================================
+   WHISPER (reconocimiento de voz en el navegador, mas preciso)
+========================================================= */
+let whisperPipe = null;
+let whisperLoading = null;
+let whisperDevice = "CPU";
+let audioCtx = null, sourceNode = null, procNode = null;
+let vadBuffers = [], vadActive = false, vadLastVoice = 0, vadStart = 0, transcribing = false;
+const VAD_THRESHOLD = 0.012;  // umbral de voz vs silencio
+const VAD_MIN_MS = 350;       // ignora ruidos demasiado cortos
+const VAD_MAX_MS = 14000;     // corta enunciados larguisimos
+const WHISPER_JUNK = /^(you|thank you|thanks for watching|bye|\.|\s)*$/i;
+
+function whisperLangName() {
+  const p = (settings.practiceLang || "en").slice(0, 2);
+  return ({ en:"english", pt:"portuguese", es:"spanish", fr:"french", de:"german", it:"italian" })[p] || "english";
+}
+
+async function loadWhisper() {
+  if (whisperPipe) return whisperPipe;
+  if (whisperLoading) return whisperLoading;
+  setMic(false, "Loading Whisper (first time downloads the model)…");
+  whisperLoading = (async () => {
+    const mod = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3/dist/transformers.min.js");
+    mod.env.allowLocalModels = false;
+    const model = settings.whisperModel || "Xenova/whisper-base";
+    const progress_callback = (p) => {
+      if (p && p.status === "progress" && p.progress != null) setMic(false, `Downloading Whisper… ${Math.round(p.progress)}%`);
+    };
+    // Intenta WebGPU (mucho mas rapido, ideal para el modelo Small); si falla, usa CPU.
+    if (navigator.gpu) {
+      try {
+        const pipe = await mod.pipeline("automatic-speech-recognition", model, { device:"webgpu", dtype:"fp16", progress_callback });
+        whisperDevice = "GPU";
+        return pipe;
+      } catch (e) { /* sin WebGPU disponible -> CPU */ }
+    }
+    whisperDevice = "CPU";
+    return mod.pipeline("automatic-speech-recognition", model, { dtype:"q8", progress_callback });
+  })();
+  try {
+    whisperPipe = await whisperLoading;
+    setMic(true, `Whisper ready (${whisperDevice}) · Listening...`);
+  } catch (e) {
+    whisperPipe = null;
+    toast("Couldn't load Whisper: " + e.message);
+    setMic(false, "Whisper failed — use text or Browser engine");
+  } finally {
+    whisperLoading = null;
+  }
+  return whisperPipe;
+}
+
+async function startWhisperListening() {
+  if (!micStream) { const ok = await ensureMicPermission(); if (!ok) { setMic(false, "Text only mode"); return; } }
+  await loadWhisper();
+  if (!whisperPipe || !isCalling) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    sourceNode = audioCtx.createMediaStreamSource(micStream);
+    procNode = audioCtx.createScriptProcessor(4096, 1, 1);
+    vadBuffers = []; vadActive = false; vadLastVoice = 0; vadStart = 0;
+    procNode.onaudioprocess = onWhisperAudio;
+    sourceNode.connect(procNode);
+    procNode.connect(audioCtx.destination);
+    setMic(true, "Listening...");
+  } catch (e) { toast("Audio capture error: " + e.message); }
+}
+
+function stopWhisperListening() {
+  try { if (procNode) { procNode.disconnect(); procNode.onaudioprocess = null; } } catch (e) {}
+  try { if (sourceNode) sourceNode.disconnect(); } catch (e) {}
+  try { if (audioCtx) audioCtx.close(); } catch (e) {}
+  procNode = null; sourceNode = null; audioCtx = null;
+  vadBuffers = []; vadActive = false; transcribing = false;
+}
+
+function onWhisperAudio(e) {
+  if (!isCalling || isMuted || speaking || waitingAI || transcribing) return; // solo cuando es tu turno
+  const input = e.inputBuffer.getChannelData(0);
+  let sum = 0; for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+  const rms = Math.sqrt(sum / input.length);
+  const now = performance.now();
+  if (rms > VAD_THRESHOLD) {
+    if (!vadActive) { vadActive = true; vadStart = now; setMic(true, "🎤 Listening..."); }
+    vadLastVoice = now;
+    vadBuffers.push(Float32Array.from(input));
+  } else if (vadActive) {
+    vadBuffers.push(Float32Array.from(input)); // captura el silencio final
+    if (now - vadLastVoice > patienceDelay() || now - vadStart > VAD_MAX_MS) finalizeUtterance();
+  }
+}
+
+async function finalizeUtterance() {
+  const buffers = vadBuffers; vadBuffers = []; vadActive = false;
+  const speechMs = (buffers.length * 4096 / 16000) * 1000;
+  if (speechMs < VAD_MIN_MS) { setMic(true, "Listening..."); return; }
+  let len = 0; buffers.forEach(b => len += b.length);
+  const audio = new Float32Array(len); let off = 0;
+  buffers.forEach(b => { audio.set(b, off); off += b.length; });
+
+  transcribing = true; setMic(false, "Transcribing…");
+  try {
+    const out = await whisperPipe(audio, { language: whisperLangName(), task: "transcribe", chunk_length_s: 30 });
+    let text = ((out && out.text) || "").trim().replace(/^\s*[\[(][^\])]*[\])]\s*/g, "");
+    transcribing = false;
+    if (text && !WHISPER_JUNK.test(text)) {
+      if (settings.manualMode) {
+        const cur = document.getElementById("manualInput").value.trim();
+        document.getElementById("manualInput").value = (cur ? cur + " " : "") + text;
+        setMic(true, "🎤 Review and Send");
+      } else {
+        handleUserUtterance(text);
+      }
+    } else {
+      setMic(true, "Listening...");
+    }
+  } catch (e) {
+    transcribing = false;
+    setMic(true, "Listening...");
+  }
 }
 
 /* =========================================================
-   CHAT + IA
+   CHAT + AI
 ========================================================= */
-let waitingAI = false;
-
 function clearChat() {
-  const c = document.getElementById("messageContainer");
-  c.innerHTML = '<div class="chat-empty" id="chatEmpty">Conectando con tu tutor...</div>';
+  document.getElementById("messageContainer").innerHTML =
+    '<div class="chat-empty" id="chatEmpty">Connecting to your tutor...</div>';
 }
 
-function appendMessage(sender, text, extra) {
-  const empty = document.getElementById("chatEmpty");
-  if (empty) empty.remove();
+function addUserTurn(text) {
+  const empty = document.getElementById("chatEmpty"); if (empty) empty.remove();
   const container = document.getElementById("messageContainer");
   const div = document.createElement("div");
-  div.className = "bubble " + (sender === "User" ? "userBubble" : "aiBubble");
-
-  const who = document.createElement("span");
-  who.className = "who";
-  who.textContent = sender === "User" ? "Tú" : "Tutor";
-  div.appendChild(who);
-
-  const body = document.createElement("div");
-  if (sender === "AI") {
-    body.innerHTML = makeWordsClickable(text);
-  } else {
-    body.textContent = text;
-  }
-  div.appendChild(body);
-
-  if (extra) {
-    const corr = document.createElement("div");
-    corr.className = "correction";
-    corr.textContent = extra;
-    div.appendChild(corr);
-  }
+  div.className = "bubble userBubble";
+  div.innerHTML = `<span class="who">You</span><div class="utext"></div>`;
+  div.querySelector(".utext").textContent = text;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   return div;
 }
 
+function injectFeedback(bubble, score, correction, note) {
+  if (!bubble) return;
+  if ((score === null || score === undefined) && !correction && !note) return;
+  const fb = document.createElement("div");
+  fb.className = "feedback";
+  let cls = "good"; if (score !== null && score < 5) cls = "low"; else if (score !== null && score < 8) cls = "mid";
+  let html = "";
+  if (score !== null && score !== undefined) html += `<span class="score ${cls}">${score}/10</span> `;
+  if (correction) html += `<span class="fb-fix">"${escHtml(correction)}"</span> `;
+  if (note) html += `<span class="fb-note">${escHtml(note)}</span>`;
+  fb.innerHTML = html;
+  bubble.appendChild(fb);
+  document.getElementById("messageContainer").scrollTop = 1e9;
+}
+
+function addAITurn(reply) {
+  const empty = document.getElementById("chatEmpty"); if (empty) empty.remove();
+  const container = document.getElementById("messageContainer");
+  const div = document.createElement("div");
+  div.className = "bubble aiBubble";
+  div.innerHTML =
+    `<span class="who">Tutor</span>` +
+    `<div class="atext">${makeWordsClickable(reply)}</div>` +
+    `<div class="ai-actions">` +
+      `<button title="Listen" onclick="speak(this.closest('.aiBubble').querySelector('.atext').textContent)">▶</button>` +
+      `<button title="Copy" onclick="copyText(this.closest('.aiBubble').querySelector('.atext').textContent)">⧉</button>` +
+    `</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function copyText(t) { if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast("Copied")); }
+
 function makeWordsClickable(text) {
-  // envuelve palabras en spans para poder guardarlas como flashcards
-  const esc = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  return esc.replace(/\b([A-Za-z][A-Za-z'-]{1,})\b/g, (m) =>
+  const esc = escHtml(text);
+  // works for accented letters too (Portuguese, Spanish, etc.)
+  return esc.replace(/[\p{L}][\p{L}'-]{1,}/gu, (m) =>
     `<span class="word" onclick="onWordClick(event, this)">${m}</span>`);
 }
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 function showTyping() {
   const container = document.getElementById("messageContainer");
   const d = document.createElement("div");
   d.className = "bubble aiBubble"; d.id = "typingBubble";
-  d.innerHTML = '<span class="who">Tutor</span><div>escribiendo…</div>';
+  d.innerHTML = '<span class="who">Tutor</span><div>typing…</div>';
   container.appendChild(d);
   container.scrollTop = container.scrollHeight;
 }
 function removeTyping() { const t = document.getElementById("typingBubble"); if (t) t.remove(); }
 
+function handleUserUtterance(text) {
+  const bubble = addUserTurn(text);
+  sendToAI(text, false, bubble);
+}
 function sendManual() {
   const input = document.getElementById("manualInput");
-  const text = input.value.trim();
-  if (!text) return;
+  const text = input.value.trim(); if (!text) return;
   input.value = "";
-  appendMessage("User", text);
-  sendToAI(text);
+  handleUserUtterance(text);
 }
 
-function systemPrompt() {
-  return `You are a friendly English tutor for a Spanish-speaking learner. ${FORMALITY_PROMPT[settings.formality] || ""} Keep replies short (1-3 sentences). If the user makes a grammar mistake, gently correct it. Always reply in English and end with a question to keep the conversation going.`;
+function replySystemPrompt(isGreeting) {
+  const tgt = targetLang().english;
+  const nat = nativeLangName();
+  const level = ({
+    beginner: `The student is a BEGINNER who knows very little ${tgt}. Use very short, simple sentences and basic words. Be very patient, warm and encouraging.`,
+    intermediate: `The student is at an intermediate level. Use everyday vocabulary and normal-length sentences, and gently push them a little.`,
+    advanced: `The student is advanced. Use natural, rich ${tgt} including common idioms.`,
+  })[settings.level || "beginner"];
+  const usage = ({
+    target: `Reply only in ${tgt}.`,
+    mixed: `Reply in ${tgt}. Do NOT add translations in parentheses to your normal sentences. ONLY if the student asks what something means, or clearly seems confused, briefly explain that specific part in ${nat}.`,
+    native: `The student barely understands ${tgt}. Explain mostly in ${nat}; give the ${tgt} words/phrases to learn together with their ${nat} meaning, and keep any ${tgt} very simple.`,
+  })[settings.langUsage || "mixed"];
+
+  if (isGreeting) {
+    return `You are Violet, a warm, patient ${tgt} tutor. ${level} ${usage} ${FORMALITY_PROMPT[settings.formality] || ""} Greet the student in 1-2 sentences and ask one simple question.`;
+  }
+  return `You are Violet, a warm, patient ${tgt} tutor for a ${nat}-speaking student who is LEARNING ${tgt}. ${level} ${usage} ${FORMALITY_PROMPT[settings.formality] || ""}
+The student is still learning, so their messages may have mistakes, be incomplete, or even be written in ${nat}. ALWAYS do your best to understand them and help — never require perfect ${tgt} and never criticize.
+Respond directly and specifically to the student's LATEST message:
+- If they ask what a word or phrase means, explain it clearly (in ${nat} when it helps) using the exact phrase they asked about.
+- Focus on what they just said. If they say "the phrase", "it" or "that", it means the phrase they just quoted or the one YOU used most recently — never invent a different phrase or topic.
+- If a message is unclear or looks mis-transcribed, gently ask them to repeat — do NOT change the subject or invent an answer.
+- Never repeat a question you already asked.
+After helping, ask ONE simple follow-up question.
+Keep it short (1-3 sentences), plain text, no JSON.
+Output ONLY your spoken reply to the student in ${tgt}. NEVER include your reasoning, planning, analysis, or any notes — just the message itself.`;
 }
 
-async function sendToAI(userText, isSystemTrigger) {
-  if (!isSystemTrigger) { stats.messages++; persist(); }
+function feedbackSystemPrompt() {
+  const tgt = targetLang().english;
+  const nat = nativeLangName();
+  const beginner = (settings.level === "beginner");
+  return `You are a kind, fair and ${beginner ? "VERY encouraging" : "encouraging"} ${tgt} teacher giving feedback on ONE thing the student said in a spoken CONVERSATION. Conversational answers are often short fragments and that is perfectly natural and correct.
+Judge ONLY the grammar and naturalness of the student's sentence by itself. NEVER lower the score for being a question, a short answer, or for changing the topic.
+Natural conversational phrases are CORRECT and must score 9-10, for example: "I'm great, and you?", "And you?", "Me too", "Nice to meet you", "Not much". Do not demand longer or "more complete" sentences in a conversation.
+Score 0-10:
+- 9-10: correct and natural (this is the MOST COMMON case — use it whenever there is no real error).
+- 6-8: understood, with ONE small grammar mistake.
+- 3-5: several mistakes but still understandable.
+- 0-2: ONLY if the sentence is truly impossible to understand.
+Correction rules:
+- If the sentence is already correct or natural, "correction" MUST be an empty string. Do NOT rewrite it just to add a comma or make it longer.
+- Only provide a correction when there is a REAL mistake.
+Note (write it in ${nat}, short and simple):
+- If correct: say clearly it is correct and sounds natural.
+- If there is a mistake: name EXACTLY what to change in simple words (e.g. "Cambia 'do' por 'does'") so a beginner can see the difference, then show the natural version.
+Respond ONLY with strict JSON, no markdown:
+{"score": <integer 0-10>, "correction": "<corrected version in ${tgt}, or empty string if already correct>", "note": "<the note in ${nat}>"}`;
+}
+
+// Modelos con "modo pensamiento" (qwen3, deepseek-r1, qwq...). Lo desactivamos para que sea rapido y limpio.
+function isThinkingModel() {
+  const m = (settings.ollamaModel || "").toLowerCase();
+  return m.includes("qwen3") || m.includes("deepseek-r1") || m.includes("qwq") || /[:\-]r1\b/.test(m) || m.includes("reasoning");
+}
+function stripThink(s) {
+  let t = String(s);
+  t = t.replace(/<think>[\s\S]*?<\/think>/gi, "");          // bloques completos
+  const close = t.toLowerCase().lastIndexOf("</think>");
+  if (close !== -1) t = t.slice(close + 8);                  // razonamiento antes del cierre
+  t = t.replace(/<\/?think>/gi, "");                          // etiquetas sueltas
+  return t.trim();
+}
+
+// Single place to call Ollama's chat endpoint.
+async function ollamaChat(opts) {
+  const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  const thinking = isThinkingModel();
+  let np = opts.num_predict || 180;
+  if (thinking) np += 800; // espacio para que termine de "pensar" y luego de la respuesta real
+  const body = {
+    model: settings.ollamaModel || "qwen3:4b",
+    stream: false,
+    keep_alive: "10m",
+    options: { num_predict: np, temperature: opts.temperature == null ? 0.6 : opts.temperature },
+    messages: opts.messages,
+  };
+  if (opts.format) body.format = opts.format;
+  if (thinking) body.think = false; // si Ollama es reciente, desactiva el pensamiento del todo
+  const res = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) {
+    if (res.status === 404) throw new Error(`model "${settings.ollamaModel}" not found in Ollama (404). Pick a model in Settings.`);
+    throw new Error("HTTP " + res.status);
+  }
+  const data = await res.json();
+  const content = (data && data.message && data.message.content) ? data.message.content
+                : (data && data.response) ? data.response : "";
+  return stripThink(content);
+}
+
+async function getReply(convo, isGreeting) {
+  const messages = [{ role:"system", content: replySystemPrompt(isGreeting) }, ...convo];
+  const txt = await ollamaChat({ messages, num_predict: 170, temperature: 0.5 });
+  return String(txt).trim();
+}
+
+async function getFeedback(userText) {
+  try {
+    const messages = [
+      { role: "system", content: feedbackSystemPrompt() },
+      { role: "user", content: `Evaluate this sentence on its own: "${userText}"` },
+    ];
+    const txt = await ollamaChat({ messages, format:"json", num_predict: 240, temperature: 0.2 });
+    const parsed = safeParse(txt);
+    if (!parsed || typeof parsed !== "object") return null;
+    const score = (typeof parsed.score === "number") ? Math.max(0, Math.min(10, Math.round(parsed.score))) : null;
+    return { score, correction: parsed.correction || "", note: parsed.note || "" };
+  } catch (e) { return null; }
+}
+
+async function sendToAI(userText, isGreeting, userBubble) {
+  if (!isGreeting) { stats.messages++; persist(); }
   waitingAI = true;
-  if (recognition) { try { recognition.stop(); } catch (e) {} } // no escuchar mientras responde
+  setMic(false, "Thinking…");
   showTyping();
 
-  const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
+  // historial para que el tutor siga el hilo
+  if (!isGreeting) history.push({ role: "user", content: userText });
+  const convo = isGreeting ? [{ role: "user", content: userText }] : history.slice(-12);
+
+  // Dos tareas en paralelo: respuesta natural (texto) + correccion (JSON)
+  const replyP = getReply(convo, isGreeting);
+  const fbP = isGreeting ? Promise.resolve(null) : getFeedback(userText);
+
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: settings.ollamaModel || "llama3",
-        stream: false,
-        messages: [
-          { role: "system", content: systemPrompt() },
-          { role: "user", content: userText },
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    const reply = (data && data.message && data.message.content) ? data.message.content.trim()
-                : (data && data.response) ? data.response.trim()
-                : "(sin respuesta)";
+    const [reply, fb] = await Promise.all([replyP, fbP]);
     removeTyping();
-    appendMessage("AI", reply);
-    speak(reply);
+    waitingAI = false;
+
+    if (fb && userBubble) injectFeedback(userBubble, fb.score, fb.correction, fb.note);
+
+    const replyText = reply || "(no reply)";
+    addAITurn(replyText);
+    lastTutorMsg = replyText;
+    speak(replyText);
+    history.push({ role: "assistant", content: replyText });
+    if (history.length > 16) history = history.slice(-16);
   } catch (err) {
     removeTyping();
-    appendMessage("AI", "⚠️ No pude conectar con el motor de IA (Ollama). Revisa la URL y el modelo en Settings, y que el servidor esté corriendo. Detalle: " + err.message);
-  } finally {
     waitingAI = false;
-    // reanudar escucha si seguimos en llamada
-    if (isCalling && !isMuted && micSupported()) { setTimeout(safeStart, 400); }
+    addAITurn("⚠️ Couldn't get a reply from the tutor: " + err.message);
+    if (isCalling && !isMuted && micSupported()) setTimeout(maybeStart, 400);
   }
+}
+
+function safeParse(s) {
+  if (typeof s !== "string") return s;
+  try { return JSON.parse(s); } catch (e) {}
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch (e) {} }
+  return null;
 }
 
 /* =========================================================
    TEXT TO SPEECH
 ========================================================= */
 let voices = [];
+let ttsKeepAlive = null;
+
+// Puntúa las voces para elegir la más natural disponible.
+function voiceScore(v) {
+  const n = (v.name + " " + (v.voiceURI || "")).toLowerCase();
+  let s = 0;
+  if (/natural|neural|premium|enhanced|wavenet|online/.test(n)) s += 50;
+  if (/google/.test(n)) s += 25;
+  if (/microsoft/.test(n)) s += 15;
+  if (v.localService) s += 5;
+  return s;
+}
+function bestVoiceFor(prefix) {
+  const exact = voices.filter(v => v.lang && v.lang.toLowerCase() === (settings.practiceLang || "").toLowerCase());
+  const byLang = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  const pool = exact.length ? exact : (byLang.length ? byLang : voices);
+  return pool.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
+}
+
 function loadVoices() {
   voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
   const sel = document.getElementById("voiceSelect");
+  if (!sel) return;
   sel.innerHTML = "";
-  const enVoices = voices.filter(v => /^en/i.test(v.lang));
-  (enVoices.length ? enVoices : voices).forEach(v => {
+  const prefix = (settings.practiceLang || "en").slice(0, 2);
+  let list = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  if (!list.length) list = voices.slice();
+  list.sort((a, b) => voiceScore(b) - voiceScore(a)); // mejores primero
+
+  // si no hay voz elegida (o no aplica al idioma actual), autoselecciona la mejor
+  const stillValid = list.some(v => v.name === settings.voiceName);
+  if (!stillValid) {
+    const best = bestVoiceFor(prefix);
+    settings.voiceName = best ? best.name : "";
+    persist();
+  }
+  list.forEach(v => {
     const o = document.createElement("option");
-    o.value = v.name; o.textContent = v.name.replace(/Microsoft|Google/gi,"").trim() + " (" + v.lang + ")";
+    o.value = v.name;
+    const nice = v.name.replace(/Microsoft|Google/gi, "").trim();
+    const natural = /natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ✨" : "";
+    o.textContent = nice + " (" + v.lang + ")" + natural;
     if (v.name === settings.voiceName) o.selected = true;
     sel.appendChild(o);
   });
-  if (!sel.options.length) { const o = document.createElement("option"); o.textContent = "Voz por defecto"; sel.appendChild(o); }
+  if (!sel.options.length) { const o = document.createElement("option"); o.textContent = "Default voice"; sel.appendChild(o); }
 }
-if (window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-}
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = loadVoices;
 
 function speak(text, langOverride) {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis) { if (isCalling && !isMuted) setTimeout(maybeStart, 200); return; }
   window.speechSynthesis.cancel();
+  if (ttsKeepAlive) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; }
+  speechBuffer = ""; clearTimeout(silenceTimer);
+  speaking = true;
+  setMic(false, "Tutor speaking…");
+
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = langOverride || settings.ttsLang || "en-US";
-  const v = voices.find(x => x.name === settings.voiceName);
+  const lang = langOverride || settings.practiceLang || "en-US";
+  u.lang = lang;
+  let v = voices.find(x => x.name === settings.voiceName && x.lang && x.lang.toLowerCase().startsWith(lang.slice(0,2)));
+  if (!v) v = bestVoiceFor(lang.slice(0, 2));
   if (v) u.voice = v;
+  u.rate = 0.95;  // un pelín más lento = más claro y menos robótico
+  u.pitch = 1.0;
+  u.volume = 1.0;
+  u.onstart = () => { speaking = true; };
+  const resume = () => {
+    if (ttsKeepAlive) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; }
+    speaking = false;
+    if (isCalling && !isMuted) { setMic(false, "Listening..."); setTimeout(maybeStart, 200); }
+  };
+  u.onend = resume; u.onerror = resume;
   window.speechSynthesis.speak(u);
+  // Workaround del bug de Chrome: la síntesis se pausa sola y corta frases largas.
+  ttsKeepAlive = setInterval(() => {
+    if (!window.speechSynthesis.speaking) { clearInterval(ttsKeepAlive); ttsKeepAlive = null; return; }
+    window.speechSynthesis.pause(); window.speechSynthesis.resume();
+  }, 9000);
 }
 
 /* =========================================================
-   GUARDAR PALABRAS / POPOVER
+   SAVE WORDS / POPOVER
 ========================================================= */
-let pendingWord = "";
 function onWordClick(event, el) {
   event.stopPropagation();
-  const word = el.textContent.toLowerCase().replace(/[^a-z'-]/g,"");
+  const word = el.textContent.toLowerCase().replace(/[^\p{L}'-]/gu, "");
   if (!word) return;
-  pendingWord = word;
   const exists = flashcards.some(f => f.word === word);
   const pop = document.getElementById("popover");
   const content = document.getElementById("popoverContent");
-  content.innerHTML = `
-    <div class="pw">${word}</div>
-    <div class="pt">${exists ? "Ya está en tus flashcards" : "Agregar a flashcards"}</div>
-    ${exists ? "" : `<button onclick="saveWord('${word}')">＋ Guardar palabra</button>`}
-  `;
+  content.innerHTML =
+    `<div class="pw">${escHtml(word)}</div>` +
+    `<div class="pt">${exists ? "Already in your flashcards" : "Add to flashcards"}</div>` +
+    (exists ? "" : `<button onclick="saveWord('${word.replace(/'/g,"\\'")}')">＋ Save word</button>`);
   pop.style.left = event.clientX + "px";
   pop.style.top = event.clientY + "px";
   pop.classList.add("show");
@@ -780,48 +1637,50 @@ document.addEventListener("click", (e) => {
 
 async function saveWord(word) {
   hidePopover();
-  if (flashcards.some(f => f.word === word)) { toast("Ya la tienes guardada"); return; }
-  // placeholder mientras la IA genera la tarjeta
-  const card = { word, status: "loading", translation: "", pos: "", added: Date.now() };
-  flashcards.push(card);
-  persist();
-  toast(`"${word}" guardada · generando tarjeta…`);
+  if (flashcards.some(f => f.word === word)) { toast("Already saved"); return; }
+  const card = { word, status:"loading", translation:"", pos:"", lang:settings.practiceLang, added:Date.now() };
+  flashcards.push(card); persist();
+  toast(`"${word}" saved · generating card…`);
   const data = await generateFlashcard(word);
-  Object.assign(card, data, { status: "ready" });
-  persist();
+  Object.assign(card, data, { status:"ready" }); persist();
   if (document.getElementById("view-flashcards").classList.contains("active")) renderFlashcardList();
 }
 
 async function generateFlashcard(word) {
+  const tgt = targetLang().english;
+  const nat = nativeLangName();
   const url = (settings.ollamaUrl || "http://localhost:11434").replace(/\/$/, "") + "/api/chat";
-  const instruction = `Create a study flashcard for the English word "${word}" for a Spanish speaker. Respond ONLY with valid JSON, no markdown, with this exact shape:
-{"translation":"<spanish translation>","pos":"<part of speech: verb/noun/adjective...>","conjugations":[{"label":"present","value":"..."},{"label":"past","value":"..."},{"label":"past participle","value":"..."},{"label":"gerund","value":"..."}],"correctExample":"<a correct English sentence>","commonError":"<a common incorrect sentence learners make>","otherMeanings":[{"pos":"noun","meaning":"<other spanish meaning>","example":"<short example>"}],"frequency":<1-5 integer>,"tip":"<one helpful study tip in Spanish>"}`;
+  const instruction = `You are a ${tgt} language teacher creating a study flashcard for the ${tgt} word "${word}". The learner's native language is ${nat}.
+
+CRITICAL LANGUAGE RULES — follow them exactly:
+- The word "${word}" is written in ${tgt}.
+- "translation": ONLY the meaning of the word translated into ${nat} (a single word or short phrase). Do NOT repeat the original word, do NOT add "=" or "es" or extra text.
+- "conjugations", "correctExample" and "commonError" MUST be written in ${tgt}. They must NOT be in English (unless ${tgt} is English) and must NOT be in ${nat}.
+- If "${word}" is a verb OR any verb form (gerund/-ing, participle, or a conjugated form), identify its base/infinitive form and give that verb's main conjugations in ${tgt} (present, past, past participle, gerund). If it is NOT a verb, return an empty array [].
+- "otherMeanings": the "meaning" field in ${nat}, the "example" field in ${tgt}.
+- "tip": one short study tip in ${nat}.
+
+Respond ONLY with valid JSON, no markdown, exactly this shape:
+{"translation":"<meaning in ${nat}>","pos":"<part of speech>","conjugations":[{"label":"present","value":"<${tgt}>"},{"label":"past","value":"<${tgt}>"},{"label":"past participle","value":"<${tgt}>"},{"label":"gerund","value":"<${tgt}>"}],"correctExample":"<correct sentence in ${tgt}>","commonError":"<common wrong sentence in ${tgt}>","otherMeanings":[{"pos":"<pos>","meaning":"<meaning in ${nat}>","example":"<example in ${tgt}>"}],"frequency":<1-5 integer>,"tip":"<study tip in ${nat}>"}`;
   try {
+    const fcThinking = isThinkingModel();
+    const fcBody = { model: settings.ollamaModel || "qwen3:4b", stream:false, format:"json",
+      keep_alive:"10m", options:{ num_predict: fcThinking ? 1200 : 450, temperature: 0.25 },
+      messages:[{ role:"user", content:instruction }] };
+    if (fcThinking) fcBody.think = false;
     const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: settings.ollamaModel || "llama3",
-        stream: false,
-        format: "json",
-        messages: [{ role: "user", content: instruction }],
-      }),
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(fcBody),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
-    const raw = (data.message && data.message.content) || data.response || "{}";
-    const json = JSON.parse(extractJSON(raw));
-    return normalizeCard(json);
+    const raw = stripThink((data.message && data.message.content) || data.response || "{}");
+    return normalizeCard(safeParse(raw) || {});
   } catch (e) {
-    // fallback offline
-    return normalizeCard({ translation: "(traducción no disponible)", pos: "", frequency: 3,
-      tip: "No se pudo generar con IA. Revisa la conexión con Ollama en Settings." });
+    return normalizeCard({ translation:"(translation unavailable)", pos:"", frequency:3,
+      tip:"Couldn't generate with AI. Check the Ollama connection in Settings." });
   }
-}
-
-function extractJSON(s) {
-  const a = s.indexOf("{"), b = s.lastIndexOf("}");
-  return (a >= 0 && b > a) ? s.slice(a, b + 1) : "{}";
 }
 function normalizeCard(j) {
   return {
@@ -837,7 +1696,7 @@ function normalizeCard(j) {
 }
 
 /* =========================================================
-   LISTA Y ESTUDIO DE FLASHCARDS
+   FLASHCARD LIST & STUDY
 ========================================================= */
 function renderFlashcardList() {
   closeStudy();
@@ -851,9 +1710,9 @@ function renderFlashcardList() {
     const c = document.createElement("div");
     c.className = "fc-chip";
     c.onclick = () => openStudy(i);
-    c.innerHTML = `<div class="w">${f.word}</div>
-      <div class="t">${f.status === "loading" ? "generando…" : (f.translation || "")}</div>
-      ${f.pos ? `<span class="pos">${f.pos}</span>` : ""}`;
+    c.innerHTML = `<div class="w">${escHtml(f.word)}</div>
+      <div class="t">${f.status === "loading" ? "generating…" : escHtml(f.translation || "")}</div>
+      ${f.pos ? `<span class="pos">${escHtml(f.pos)}</span>` : ""}`;
     grid.appendChild(c);
   });
 }
@@ -867,16 +1726,11 @@ function openStudy(i) {
   renderStudyCard();
 }
 function closeStudy() {
-  const sw = document.getElementById("studyWrap");
-  if (sw) sw.style.display = "none";
-  const lw = document.getElementById("fcListWrap");
-  if (lw) lw.style.display = "block";
+  const sw = document.getElementById("studyWrap"); if (sw) sw.style.display = "none";
+  const lw = document.getElementById("fcListWrap"); if (lw) lw.style.display = "block";
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
-function navStudy(dir) {
-  studyIndex = Math.max(0, Math.min(flashcards.length - 1, studyIndex + dir));
-  renderStudyCard();
-}
+function navStudy(dir) { studyIndex = Math.max(0, Math.min(flashcards.length - 1, studyIndex + dir)); renderStudyCard(); }
 function flipCard(e) {
   if (e && e.target.closest(".mini-speak, .listen-btn, .card-actions")) return;
   document.getElementById("flipCard").classList.toggle("flipped");
@@ -886,73 +1740,72 @@ function renderStudyCard() {
   const f = flashcards[studyIndex];
   const total = flashcards.length;
   document.getElementById("studyProgress").style.width = (((studyIndex + 1) / total) * 100) + "%";
-  document.getElementById("studyCount").textContent = `${studyIndex + 1} de ${total} palabras`;
+  document.getElementById("studyCount").textContent = `${studyIndex + 1} of ${total} words`;
   document.getElementById("studyIndex").textContent = `${studyIndex + 1} / ${total}`;
   document.getElementById("prevCard").disabled = studyIndex === 0;
   document.getElementById("nextCard").disabled = studyIndex === total - 1;
 
-  const flip = document.getElementById("flipCard");
-  flip.classList.remove("flipped");
-
+  const flip = document.getElementById("flipCard"); flip.classList.remove("flipped");
   const inner = document.getElementById("flipInner");
+
   if (f.status === "loading") {
-    inner.innerHTML = `
-      <div class="face front"><div class="big-word">${f.word}</div><div class="flip-cta">generando tarjeta…</div></div>
-      <div class="face back"><div class="loading-card"><div class="spinner"></div>La IA está creando esta tarjeta…</div></div>`;
+    inner.innerHTML =
+      `<div class="face front"><div class="big-word">${escHtml(f.word)}</div><div class="flip-cta">generating card…</div></div>
+       <div class="face back"><div class="loading-card"><div class="spinner"></div>The AI is creating this card…</div></div>`;
     return;
   }
 
+  const cardLang = f.lang || settings.practiceLang;
   const conj = (f.conjugations || []).map(c => `
-    <div class="conj"><span>${c.label}: <b>${c.value}</b></span>
-      <button class="mini-speak" onclick="speak('${escAttr(c.value)}')">🔊</button></div>`).join("");
+    <div class="conj"><span>${escHtml(c.label)}: <b>${escHtml(c.value)}</b></span>
+      <button class="mini-speak" onclick="speak('${escAttr(c.value)}','${cardLang}')">🔊</button></div>`).join("");
 
   const others = (f.otherMeanings || []).map(o => `
-    <div class="other-mean"><span class="pos-badge">${o.pos || ""}</span> ${o.meaning || ""}${o.example ? ` — <i>${o.example}</i>` : ""}</div>`).join("");
+    <div class="other-mean"><span class="pos-badge">${escHtml(o.pos || "")}</span> ${escHtml(o.meaning || "")}${o.example ? ` — <i>${escHtml(o.example)}</i>` : ""}</div>`).join("");
 
   const segs = Array.from({length:5}, (_,k) => `<div class="seg ${k < f.frequency ? "on":""}"></div>`).join("");
   const freqLabel = f.frequency >= 4 ? "high" : f.frequency >= 2 ? "medium" : "low";
 
   inner.innerHTML = `
     <div class="face front">
-      <div class="big-word">${f.word}</div>
-      ${f.pos ? `<span class="pos-badge">${f.pos}</span>` : ""}
-      <div class="flip-cta">Haz clic para ver el significado</div>
+      <div class="big-word">${escHtml(f.word)}</div>
+      ${f.pos ? `<span class="pos-badge">${escHtml(f.pos)}</span>` : ""}
+      <div class="flip-cta">Click to see the meaning</div>
     </div>
     <div class="face back">
       <div class="card-head">
-        <span class="card-word">${f.word}</span>
-        ${f.pos ? `<span class="pos-badge">${f.pos}</span>` : ""}
-        <button class="listen-btn" onclick="speak('${escAttr(f.word)}')">🔊 Escuchar</button>
+        <span class="card-word">${escHtml(f.word)}</span>
+        ${f.pos ? `<span class="pos-badge">${escHtml(f.pos)}</span>` : ""}
+        <button class="listen-btn" onclick="speak('${escAttr(f.word)}','${cardLang}')">🔊 Listen</button>
       </div>
-      ${f.translation ? `<div class="translation">${f.translation}</div>` : ""}
-      ${conj ? `<div class="blk"><div class="blk-title">Conjugaciones</div><div class="conj-grid">${conj}</div></div>` : ""}
-      ${f.correctExample ? `<div class="blk"><div class="blk-title">✓ Ejemplo correcto</div><div class="example good">${f.correctExample}</div></div>` : ""}
-      ${f.commonError ? `<div class="blk"><div class="blk-title">✗ Error común</div><div class="example bad">${f.commonError}</div></div>` : ""}
-      ${others ? `<div class="blk"><div class="blk-title">Otros significados</div>${others}</div>` : ""}
-      ${f.frequency ? `<div class="blk"><div class="blk-title">Qué tan usada</div><div class="freq">${segs}<span class="label">${freqLabel}</span></div></div>` : ""}
-      ${f.tip ? `<div class="tip"><div class="tip-h">💡 Te recomendamos</div><div class="tip-b">${f.tip}</div></div>` : ""}
+      ${f.translation ? `<div class="translation">${escHtml(f.translation)}</div>` : ""}
+      ${conj ? `<div class="blk"><div class="blk-title">Conjugations</div><div class="conj-grid">${conj}</div></div>` : ""}
+      ${f.correctExample ? `<div class="blk"><div class="blk-title">✓ Correct example</div><div class="example good">${escHtml(f.correctExample)}</div></div>` : ""}
+      ${f.commonError ? `<div class="blk"><div class="blk-title">✗ Common mistake</div><div class="example bad">${escHtml(f.commonError)}</div></div>` : ""}
+      ${others ? `<div class="blk"><div class="blk-title">Other meanings</div>${others}</div>` : ""}
+      ${f.frequency ? `<div class="blk"><div class="blk-title">How common</div><div class="freq">${segs}<span class="label">${freqLabel}</span></div></div>` : ""}
+      ${f.tip ? `<div class="tip"><div class="tip-h">💡 We recommend</div><div class="tip-b">${escHtml(f.tip)}</div></div>` : ""}
       <div class="card-actions">
-        <button onclick="event.stopPropagation(); regenCard(${studyIndex})">↻ Regenerar</button>
-        <button class="del" onclick="event.stopPropagation(); deleteCard(${studyIndex})">🗑 Eliminar</button>
+        <button onclick="event.stopPropagation(); regenCard(${studyIndex})">↻ Regenerate</button>
+        <button class="del" onclick="event.stopPropagation(); deleteCard(${studyIndex})">🗑 Delete</button>
       </div>
     </div>`;
 }
 
-function escAttr(s) { return String(s).replace(/'/g, "\\'").replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"&quot;"); }
 
 async function regenCard(i) {
   const f = flashcards[i];
   f.status = "loading"; persist(); renderStudyCard();
   const data = await generateFlashcard(f.word);
-  Object.assign(f, data, { status: "ready" }); persist();
+  Object.assign(f, data, { status:"ready" }); persist();
   if (studyIndex === i) renderStudyCard();
 }
 function deleteCard(i) {
   flashcards.splice(i, 1); persist();
   if (!flashcards.length) { closeStudy(); renderFlashcardList(); return; }
   studyIndex = Math.min(studyIndex, flashcards.length - 1);
-  renderStudyCard();
-  toast("Flashcard eliminada");
+  renderStudyCard(); toast("Flashcard deleted");
 }
 
 /* =========================================================
@@ -962,67 +1815,202 @@ function renderStats() {
   document.getElementById("statWords").textContent = flashcards.length;
   document.getElementById("statSessions").textContent = stats.sessions;
   document.getElementById("statMessages").textContent = stats.messages;
+  const g = document.getElementById("statGrammar");
+  if (g) g.textContent = Object.keys(grammarDone).filter(k => grammarDone[k]).length;
 }
 
 /* =========================================================
    SETTINGS
 ========================================================= */
+function buildLangSelects() {
+  const top = document.getElementById("langSelect");
+  const set = document.getElementById("practiceLangSelect");
+  [top, set].forEach(sel => {
+    if (!sel) return;
+    sel.innerHTML = "";
+    LANGUAGES.forEach(l => {
+      const o = document.createElement("option");
+      o.value = l.code; o.textContent = `${l.flag} ${l.name}`;
+      if (l.code === settings.practiceLang) o.selected = true;
+      sel.appendChild(o);
+    });
+  });
+  const nat = document.getElementById("nativeLangSelect");
+  if (nat) {
+    nat.innerHTML = "";
+    NATIVE_LANGS.forEach(l => {
+      const o = document.createElement("option");
+      o.value = l.code; o.textContent = l.name;
+      if (l.code === settings.nativeLang) o.selected = true;
+      nat.appendChild(o);
+    });
+  }
+  document.getElementById("langFlag").textContent = targetLang().flag;
+}
+
+function setPracticeLang(code) {
+  settings.practiceLang = code; persist();
+  if (recognition) recognition.lang = code;
+  document.getElementById("langFlag").textContent = targetLang().flag;
+  // keep both selectors in sync
+  const top = document.getElementById("langSelect"); if (top) top.value = code;
+  const set = document.getElementById("practiceLangSelect"); if (set) set.value = code;
+  loadVoices();
+  toast("Practice language: " + targetLang().name);
+}
+
 function renderSettings() {
+  buildLangSelects();
   document.querySelectorAll(".seg-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.formality === settings.formality));
   document.getElementById("formalityDesc").textContent = FORMALITY_TEXT[settings.formality];
+  const lv = document.getElementById("levelSelect"); if (lv) lv.value = settings.level || "beginner";
+  const lu = document.getElementById("langUsageSelect"); if (lu) lu.value = settings.langUsage || "mixed";
+  updateLevelNote();
+  const mm = document.getElementById("manualModeToggle"); if (mm) mm.checked = !!settings.manualMode;
+  const ps = document.getElementById("patienceSlider"); if (ps) ps.value = settings.patience;
+  const pv = document.getElementById("patienceVal"); if (pv) pv.textContent = settings.patience;
+  const nc = document.getElementById("noiseCancelToggle"); if (nc) nc.checked = settings.noiseCancel !== false;
+  const se = document.getElementById("sttEngineSelect"); if (se) se.value = settings.sttEngine || "browser";
+  const wm = document.getElementById("whisperModelSelect"); if (wm) wm.value = settings.whisperModel || "Xenova/whisper-base";
+  const wf = document.getElementById("whisperModelField"); if (wf) wf.style.display = (settings.sttEngine === "whisper") ? "block" : "none";
+  updateWhisperNote();
+  populateMicDevices();
   document.getElementById("ollamaUrl").value = settings.ollamaUrl;
-  document.getElementById("ollamaModel").value = settings.ollamaModel;
-  document.getElementById("ttsLangSelect").value = settings.ttsLang;
+  populateModelSelect(settings.ollamaModel ? [settings.ollamaModel] : []);
+  loadOllamaModels();
+  loadVoices();
 }
-function setFormality(f) {
-  settings.formality = f; persist(); renderSettings();
-  toast("Formalidad: " + f);
-}
-document.addEventListener("input", (e) => {
-  if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
-  if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value.trim(); persist(); }
-});
-document.addEventListener("change", (e) => {
-  if (e.target.id === "ttsLangSelect") { settings.ttsLang = e.target.value; persist(); if (recognition) recognition.lang = settings.ttsLang; }
-  if (e.target.id === "voiceSelect") { settings.voiceName = e.target.value; persist(); }
-});
 
-async function testConnection() {
-  const note = document.getElementById("connNote");
-  note.style.color = "var(--text-dim)"; note.textContent = "Probando…";
+function populateModelSelect(names) {
+  const sel = document.getElementById("ollamaModel"); if (!sel) return;
+  sel.innerHTML = "";
+  if (!names.length) {
+    const o = document.createElement("option"); o.value = ""; o.textContent = "(no models — test connection)";
+    sel.appendChild(o); return;
+  }
+  names.forEach(n => {
+    const o = document.createElement("option"); o.value = n; o.textContent = n;
+    if (n === settings.ollamaModel) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (!names.includes(settings.ollamaModel)) sel.value = names[0];
+}
+
+async function loadOllamaModels() {
   const url = (settings.ollamaUrl || "").replace(/\/$/, "") + "/api/tags";
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
-    const models = (data.models || []).map(m => m.name).join(", ");
-    note.style.color = "var(--green)";
-    note.textContent = "✓ Conectado. Modelos: " + (models || "ninguno instalado");
-  } catch (e) {
-    note.style.color = "var(--red)";
-    note.textContent = "✗ No se pudo conectar. ¿Ollama está corriendo? (" + e.message + ")";
+    const names = (data.models || []).map(m => m.name);
+    // si el modelo guardado no existe, prefiere el recomendado (qwen2.5:3b); si no, el primero
+    if (names.length && !names.includes(settings.ollamaModel)) {
+      settings.ollamaModel = names.includes(PREFERRED_MODEL) ? PREFERRED_MODEL : names[0];
+      persist();
+    }
+    populateModelSelect(names);
+    return names;
+  } catch (e) { return null; }
+}
+
+function setFormality(f) { settings.formality = f; persist(); renderSettings(); toast("Formality: " + f); }
+function setLevel(v) { settings.level = v; persist(); updateLevelNote(); toast("Level: " + v); }
+function setLangUsage(v) { settings.langUsage = v; persist(); updateLevelNote(); toast("Tutor language: " + v); }
+function updateLevelNote() {
+  const n = document.getElementById("levelNote");
+  if (!n) return;
+  const u = ({
+    native: "The tutor will explain mostly in your language — best when you're starting out.",
+    mixed: "The tutor speaks the target language but adds translations in your language when needed.",
+    target: "The tutor speaks only the target language — full immersion.",
+  })[settings.langUsage || "mixed"];
+  n.textContent = u;
+}
+function setManualMode(v) {
+  settings.manualMode = !!v; persist();
+  if (settings.manualMode) { speechBuffer = ""; clearTimeout(silenceTimer); }
+  toast(settings.manualMode ? "Manual mode ON" : "Manual mode OFF");
+}
+function setPatience(v) {
+  settings.patience = parseInt(v, 10) || 5; persist();
+  const lbl = document.getElementById("patienceVal");
+  if (lbl) lbl.textContent = settings.patience;
+}
+function setNoiseCancel(v) {
+  settings.noiseCancel = !!v; persist();
+  refreshMicStream();
+  toast(settings.noiseCancel ? "Noise cancellation ON" : "Noise cancellation OFF");
+}
+function setSttEngine(v) {
+  settings.sttEngine = v; persist();
+  document.getElementById("whisperModelField").style.display = (v === "whisper") ? "block" : "none";
+  updateWhisperNote();
+  toast(v === "whisper" ? "Whisper engine (applies next call)" : "Browser engine (applies next call)");
+}
+function setWhisperModel(v) {
+  settings.whisperModel = v; persist();
+  whisperPipe = null; // forzar recarga del nuevo modelo en la proxima llamada
+  updateWhisperNote();
+  toast("Whisper model: " + v.split("/").pop());
+}
+function updateWhisperNote() {
+  const n = document.getElementById("whisperNote");
+  if (!n) return;
+  if (settings.sttEngine === "whisper") {
+    const gpu = navigator.gpu ? "Your browser supports WebGPU, so Whisper runs on your GPU (fast) — the Small model is recommended for best accuracy."
+                              : "Your browser has no WebGPU, so Whisper runs on CPU — use Tiny or Base to keep it fast.";
+    n.textContent = "Whisper transcribes on your device (private, offline after the first download). " + gpu;
+  } else {
+    n.textContent = "The browser engine is instant but can confuse similar-sounding words.";
   }
 }
 
+document.addEventListener("input", (e) => {
+  if (e.target.id === "ollamaUrl") { settings.ollamaUrl = e.target.value.trim(); persist(); }
+});
+document.addEventListener("change", (e) => {
+  if (e.target.id === "langSelect" || e.target.id === "practiceLangSelect") setPracticeLang(e.target.value);
+  if (e.target.id === "nativeLangSelect") { settings.nativeLang = e.target.value; persist(); toast("Explanations in " + nativeLangName()); }
+  if (e.target.id === "ollamaModel") { settings.ollamaModel = e.target.value; persist(); toast("Model: " + settings.ollamaModel); }
+  if (e.target.id === "micDeviceSelect") { settings.micDeviceId = e.target.value; persist(); refreshMicStream(); toast("Microphone updated"); }
+  if (e.target.id === "voiceSelect") { settings.voiceName = e.target.value; persist(); }
+});
+
+async function testConnection() {
+  const note = document.getElementById("connNote");
+  note.style.color = "var(--text-dim)"; note.textContent = "Testing…";
+  const names = await loadOllamaModels();
+  if (names === null) {
+    note.style.color = "var(--red)";
+    note.textContent = "✗ Could not connect. Is Ollama running at " + settings.ollamaUrl + " ?";
+    return;
+  }
+  note.style.color = "var(--green)";
+  note.textContent = names.length
+    ? "✓ Connected. Active model: " + settings.ollamaModel + " · available: " + names.join(", ")
+    : "✓ Connected, but no models installed. Run: ollama pull qwen3:4b";
+}
+
 function resetData() {
-  if (!confirm("¿Borrar TODAS las flashcards? Esto no se puede deshacer.")) return;
+  if (!confirm("Delete ALL flashcards? This cannot be undone.")) return;
   flashcards = []; persist();
   renderFlashcardList(); renderStats();
-  toast("Flashcards borradas");
+  toast("Flashcards deleted");
 }
 
 /* =========================================================
    INIT
 ========================================================= */
 function init() {
-  // migrar settings faltantes
   settings = Object.assign({}, DEFAULT_SETTINGS, settings);
+  if (["llama3", "llama3.2:3b", "qwen2.5:3b"].includes(settings.ollamaModel)) settings.ollamaModel = PREFERRED_MODEL; // migra defaults viejos a qwen3:4b
+  persist();
+  buildLangSelects();
   loadVoices();
   renderSettings();
-  if (!micSupported()) {
-    setMicText("Tu navegador no soporta voz (usa Chrome/Edge)");
-  }
+  loadOllamaModels();
+  if (!micSupported()) setMic(false, "Your browser doesn't support speech (use Chrome/Edge)");
 }
 init();
 </script>
